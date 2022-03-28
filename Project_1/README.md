@@ -1,4 +1,4 @@
-## <b>Compilers Project 1: Calculator-Interpreter
+## <b>Compilers Project 1: LL(1) Calculator Parser  
 
 ### <b>Προσωπικά στοιχεία
 
@@ -44,6 +44,7 @@ First off, we need to remodel our grammar in order to meet the following require
     Left recursive grammars are possible to trap a LL(1) parser into infinity loops.  
     That happens because at a specific time we do not have enough   
     information on which rule to apply to proceed into the unfolding of the expression.  
+    
         Formally a grammar is left recursive if exist at least one non-terminal  
         A such as that: A->* A a. (for some set of symbols a).  
         * Means A-> Bx 
