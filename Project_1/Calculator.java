@@ -21,3 +21,32 @@ The grammar (for single-digit numbers) is summarized in:
 import java.io.InputStream;
 import java.awt.SystemTray;
 import java.io.IOException;
+
+class Evaluator {
+
+    private final InputStream in;
+
+    private int lookahead;
+
+    public Evaluator(InputStream in) throws IOException {
+        this.in = in;
+        lookahead = in.read();
+    }
+
+    private void Exp() {
+        return;
+    }
+
+    private void Term(){
+        return;
+    }
+    private void Rest(){
+        return;
+    }
+    private void Rest2(){
+        return;
+    }
+    private void Factor(){
+        return;
+    }
+}
