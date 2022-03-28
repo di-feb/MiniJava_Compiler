@@ -22,6 +22,15 @@ import java.io.InputStream;
 import java.awt.SystemTray;
 import java.io.IOException;
 
+class Calculator {
+    public static void main(String[] args) {
+        try {
+            System.out.println((new Evaluator(System.in)).eval());
+        } catch (IOException | ParseError e) {
+            System.err.println(e.getMessage());
+        }
+    }
+}
 class Evaluator {
 
     private final InputStream in;
@@ -60,9 +69,8 @@ class Evaluator {
 
     private int Rest(int num) throws IOException, ParseError{
         if(isDigit(lookahead) || isANDoperator(lookahead) || isLeftParenthesis(lookahead)) throw new ParseError();
-        if(isEOF(lookahead) || isRightParenthesis(lookahead)){
-            return 0;
-        }
+        if(isEOF(lookahead) || isRightParenthesis(lookahead))
+            return num;
         else{
             consume(lookahead);
             int num2 = Rest(Term());
@@ -71,9 +79,8 @@ class Evaluator {
     }
     private int Rest2(int num) throws IOException, ParseError{
         if(isDigit(lookahead) || isLeftParenthesis(lookahead)) throw new ParseError();
-        if(isXORoperator(lookahead) || isEOF(lookahead) || isRightParenthesis(lookahead)){
-            return 0;
-        }
+        if(isXORoperator(lookahead) || isEOF(lookahead) || isRightParenthesis(lookahead))
+            return num;
         else {
             consume(lookahead);
             int num2 = Rest2(Factor());
@@ -94,23 +101,12 @@ class Evaluator {
             return cond;
         }
     }
-    
+
     public int eval() throws IOException, ParseError {
-        int value = Tern();
-    
+        int value = Exp();
+
         if (lookahead != -1 && lookahead != '\n')
             throw new ParseError();
-    
         return value;
-    }
-}
-
-class Main {
-    public static void main(String[] args) {
-        try {
-            System.out.println((new Evaluator(System.in)).eval());
-        } catch (IOException | ParseError e) {
-            System.err.println(e.getMessage());
-        }
     }
 }
