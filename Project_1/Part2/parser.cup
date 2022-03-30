@@ -1,4 +1,4 @@
-```java_cup
+```java
 /* Simple +/-/* expression language; parser evaluates constant expressions on the fly*/
 /**
  *  Package and Import Specifications
