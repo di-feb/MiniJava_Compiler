@@ -1,6 +1,6 @@
 *.class
 *Parser.java
-*Scanner.java
+*Lexer.java
 *sym.java
 *~
 README.pdf
