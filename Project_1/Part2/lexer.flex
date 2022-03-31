@@ -50,8 +50,8 @@ LineTerminator = \r|\n|\r\n
 // White space is a line terminator, space, tab, or line feed.
 WhiteSpace     = {LineTerminator} | [ \t\f]
 
-if = if 
-else = else
+If = if 
+Else = else
 Letter = [a-zA-Z]
 Digit = [0-9]
 // An identifier starts with a letter,followed by an arbitrary number of
@@ -94,9 +94,9 @@ Identifier = {Letter}{IdentifierCharacter}*
 \\                  { stringBuffer.append('\\'); }
 }
 
-{if}         { return symbol(sym.IF);}
-{else}       { return symbol(sym.ELSE);}
-{identifier} { return symbol(sym.IDENTIFIER, new String(yytext())); }
+{If}         { return symbol(sym.IF);}
+{Else}       { return symbol(sym.ELSE);}
+{Identifier} { return symbol(sym.IDENTIFIER, new String(yytext())); }
 {WhiteSpace}   { /* just skip what was found, do nothing */ }
 // No token was found for the input so through an error.  Print out an
 // Illegal character message with the illegal character that was found.
