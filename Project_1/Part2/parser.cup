@@ -1,5 +1,16 @@
-//Package and Import Specifications
 import java_cup.runtime.*;
+// Parser code to change the way the parser reports errors (include
+// line and column number of the error). 
+parser code {:
+    public boolean syntaxErrors;
+
+    public void syntax_error(Symbol current_token) {
+        report_error(
+            "Syntax error at line " + (current_token.left+1) + ", column "
+            + current_token.right, null
+        );
+    }
+:};
 
 //  Usercode Components
 parser code {:
@@ -14,25 +25,35 @@ scan with {: return s.next_token(); :};
 
 // Symbol Lists
 // Terminals (tokens returned by the scanner).
-terminal            PLUS, LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, IF, ELSE, PREFIX, REVERSE;
-terminal String     STRING_LITERAL;        // our scanner provides numbers as strings
+// Lexical Analysis is the process of converting a stream
+// of characters into a sequence of tokens.
+// A token represents a string with an assigned meaning
+// that describes a series of related lexemes.
+// A lexeme is a contiguous sequence of characters
+// that form a lexical unit in the grammar of a language.
 
-/*  Non terminals */
-non terminal            program, definition;
+terminal            PLUS, LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, IF, ELSE, PREFIX, REVERSE;
+terminal String     STRING_LITERAL, IDENTIFIER;        // our scanner provides numbers as strings
+
+// Non terminals
+non terminal            program, definition, call;
 //non terminal String
 
 
 //  Precedence Declarations
+// In contrast to JFlex, precedence in CUP works bottom to up.
+// That is, the earlier the declaration, the lower the precedence.
 precedence left PLUS;
+precedence left PREFIX;
+precedence left REVERSE;
 
 
-//The Grammar Rules
+// The Grammar Rules
 start with program;
-program ::= definition:def {:
-                            System.out.println("public class Main{");}
-                            System.out.println("\tpublic static void main(String[] args)");
-                            }
-                            ;
-definition ::= LBRACKET ;
-            | EOF;
-            ;
+// The programms are concluded from function definitions and calls.
+program ::= definition:def call:cl {:System.out.println("public class Main{\n\tpublic static void main(String[] args){\n" + cl + "\t}\n" + def + "\n}"); :};
+
+//definition
+definition ::= IDENTIFIER LPAREN 
+
+
