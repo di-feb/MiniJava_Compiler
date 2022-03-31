@@ -1,43 +1,38 @@
-```Java
-/* Simple +/-/* expression language; parser evaluates constant expressions on the fly*/
-/**
- *  Package and Import Specifications
- */
+//Package and Import Specifications
 import java_cup.runtime.*;
 
-/**
- *  Usercode Components
- */
+//  Usercode Components
 parser code {:
     // Connect this parser to a scanner!
     Lexer s;
     Parser(Lexer s){ this.s=s; }
 :}
 
-/* define how to connect to the lexer! */
+// Define how to connect to the lexer!
 scan with {: return s.next_token(); :};
 
-/**
- *  Symbol Lists
- */
 
-/* Terminals (tokens returned by the scanner). */
+// Symbol Lists
+// Terminals (tokens returned by the scanner).
 terminal            PLUS, LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, IF, ELSE, PREFIX, REVERSE;
 terminal String     STRING_LITERAL;        // our scanner provides numbers as strings
 
 /*  Non terminals */
-non terminal            expr_list;
-non terminal Integer    expr;      // used to store evaluated subexpressions
+non terminal            program, definition;
+//non terminal String
 
-/**
- *  Precedence Declarations
- */
-precedence left PLUS, MINUS;
-precedence left TIMES;
 
-/**
- *  The Grammar Rules
- */
-exp ::= 
-             ;
-```
+//  Precedence Declarations
+precedence left PLUS;
+
+
+//The Grammar Rules
+start with program;
+program ::= definition:def {:
+                            System.out.println("public class Main{");}
+                            System.out.println("\tpublic static void main(String[] args)");
+                            }
+                            ;
+definition ::= LBRACKET ;
+            | EOF;
+            ;

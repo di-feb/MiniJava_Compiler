@@ -5,7 +5,7 @@ import java_cup.runtime.*;
 
 /*
    The name of the class JFlex will create will be Lexer.
-   Will write the code to the file Scanner.java.
+   Will write the code to the file Lexer.java.
 */
 %class Lexer
 
@@ -29,7 +29,7 @@ import java_cup.runtime.*;
   Code between %{ and %}, both of which must be at the beginning of a
   line, will be copied letter to letter into the lexer class source.
   Here you declare member variables and functions that are used inside
-  scanner actions.
+  lexer actions.
 */
 
 %{
@@ -46,30 +46,35 @@ import java_cup.runtime.*;
 %}
 
 
-/*
-  Macro Declarations
+//Macro Declarations
 
-  These declarations are regular expressions that will be used latter
-  in the Lexical Rules Section.
-*/
+// These declarations are regular expressions that will be used latter
+// in the Lexical Rules Section.
 
-/* A line terminator is a \r (carriage return), \n (line feed), or
-   \r\n. */
+// A line terminator is a \r (carriage return), \n (line feed), or \r\n. 
 LineTerminator = \r|\n|\r\n
 
-/* White space is a line terminator, space, tab, or line feed. */
+// White space is a line terminator, space, tab, or line feed.
 WhiteSpace     = {LineTerminator} | [ \t\f]
+
+if = if 
+else = else
+identifier = [a-z][a-z]*
+
+%state STRING
 
 %%
 /* ------------------------Lexical Rules Section---------------------- */
 <YYINITIAL> {
 /* operators */
- "+"      { return symbol(sym.PLUS); }
- "("      { return symbol(sym.LPAREN); }
- ")"      { return symbol(sym.RPAREN); }
- "{"      { return symbol(sym.LBRACKET); }
- "}"      { return symbol(sym.RBRACKET); }
- ","      { return symbol(sym.COMMA); }
+ "+"            { return symbol(sym.PLUS); }
+ "("            { return symbol(sym.LPAREN); }
+ ")"            { return symbol(sym.RPAREN); }
+ "{"            { return symbol(sym.LBRACKET); }
+ "}"            { return symbol(sym.RBRACKET); }
+ ","            { return symbol(sym.COMMA); }
+ "prefix"       { return symbol(sym.PREFIX); }
+ "reverse"      { return symbol(sym.REVERSE); }
  \"             { stringBuffer.setLength(0); yybegin(STRING); }
  {WhiteSpace}   { /* just skip what was found, do nothing */ }
 }
@@ -86,6 +91,10 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
 \\\"                { stringBuffer.append('\"'); }
 \\                  { stringBuffer.append('\\'); }
 }
+
+{if}         { return symbol(sym.IF);}
+{else}       { return symbol(sym.ELSE);}
+{identifier} { return symbol(sym.IDENTIFIER, new String(yytext())); }
 
 /* No token was found for the input so through an error.  Print out an
    Illegal character message with the illegal character that was found. */
