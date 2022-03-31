@@ -59,24 +59,33 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
 
 if = if 
 else = else
-identifier = [a-z][a-z]*
+Letter = [a-zA-Z]
+Digit = [0-9]
+// An identifier starts with a letter,followed by an arbitrary number of
+// underscores, letters, or digits. Identifiers are case-sensitive.
+// Punctuation other than underscore is not allowed.
+IdentifierCharacter = {Letter} | {Digit} | "_"
+Identifier = {Letter}{IdentifierCharacter}*
 
 %state STRING
 
 %%
 /* ------------------------Lexical Rules Section---------------------- */
 <YYINITIAL> {
-/* operators */
+// operators 
+// We must keep in mind that the order of the rules matters,
+// as the earlier a rule is declared, the higher its priority is.
+// The symbols that we are returning (sym.EQ, sym.PLUS and so on)
+// will be later defined in our CUP specification.
  "+"            { return symbol(sym.PLUS); }
+ "prefix"       { return symbol(sym.PREFIX); }
+ "reverse"      { return symbol(sym.REVERSE); }
  "("            { return symbol(sym.LPAREN); }
  ")"            { return symbol(sym.RPAREN); }
  "{"            { return symbol(sym.LBRACKET); }
  "}"            { return symbol(sym.RBRACKET); }
  ","            { return symbol(sym.COMMA); }
- "prefix"       { return symbol(sym.PREFIX); }
- "reverse"      { return symbol(sym.REVERSE); }
  \"             { stringBuffer.setLength(0); yybegin(STRING); }
- {WhiteSpace}   { /* just skip what was found, do nothing */ }
 }
 
 <STRING> {
@@ -95,7 +104,7 @@ identifier = [a-z][a-z]*
 {if}         { return symbol(sym.IF);}
 {else}       { return symbol(sym.ELSE);}
 {identifier} { return symbol(sym.IDENTIFIER, new String(yytext())); }
-
+{WhiteSpace}   { /* just skip what was found, do nothing */ }
 /* No token was found for the input so through an error.  Print out an
    Illegal character message with the illegal character that was found. */
 [^]                    { throw new Error("Illegal character <"+yytext()+">"); }
