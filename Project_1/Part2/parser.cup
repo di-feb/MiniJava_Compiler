@@ -24,7 +24,7 @@ terminal            PLUS, LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, IF, ELSE, P
 terminal String     STRING_LITERAL, IDENTIFIER;        // our scanner provides numbers as strings
 
 // Non terminals
-non terminal        program, definition_list, definition, call_list, parameters_list, parameters, block, if_list, expr, string ;
+non terminal        program, definition_list, definition, call_list, parameters_list, parameters, block, if_list, expr, string, _if_, if_expr, expr_list, exp, if_block, else_list, call ;
 
 // Precedence Declarations
 // In contrast to JFlex, precedence in CUP works bottom to up.
@@ -61,10 +61,51 @@ parameters ::= IDENTIFIER COMMA
 // just a string
 // the arguments concatenated with + 
 // a series of if statements.
-block ::= string:str 
-        | expr:e1 PLUS  expr:e2 
+block ::= expr:e 
         | if_list:if_ls
 ;
+
+string ::= STRING_LITERAL
+;
+
+expr ::= expr:e1 PLUS expr:e2 
+        | string:str
+        | 
+;
+
+if_list ::= if_list:if_ls _if_:ifel
+            |_if_:ifel
+;
+
+_if_ ::= if_expr:if_ex if_block:if_bl else_list:el 
+;
+
+if_expr ::= IF LPAREN expr_list:el RPAREN
+;
+
+expr_list ::= expr_list:el exp:e
+            | exp:e
+;
+
+exp ::= exp PREFIX exp
+    | exp REVERSE
+    | REVERSE exp 
+    | STRING_LITERAL
+;
+
+if_block ::= if_list:if_ls
+            | call:cl
+            | STRING_LITERAL
+            | IDENTIFIER
+;
+
+else_list ::= ELSE if_list
+            | ELSE call:cl
+            | ELSE STRING_LITERAL
+            | ELSE IDENTIFIER
+;
+
+
 
 
 
