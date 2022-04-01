@@ -82,13 +82,10 @@ Identifier = {Letter}{IdentifierCharacter}*
 }
 
 <STRING> {
-\"                  { yybegin(YYINITIAL);
-                    return symbol(sym.STRING_LITERAL, stringBuffer.toString()); }
-
+\"                  { yybegin(YYINITIAL); return symbol(sym.STRING_LITERAL, stringBuffer.toString()); }
 [^\n\r\"\\]+        { stringBuffer.append( yytext() ); }
 \\t                 { stringBuffer.append('\t'); }
 \\n                 { stringBuffer.append('\n'); }
-
 \\r                 { stringBuffer.append('\r'); }
 \\\"                { stringBuffer.append('\"'); }
 \\                  { stringBuffer.append('\\'); }

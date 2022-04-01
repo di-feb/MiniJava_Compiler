@@ -1,16 +1,4 @@
 import java_cup.runtime.*;
-// Parser code to change the way the parser reports errors (include
-// line and column number of the error). 
-parser code {:
-    public boolean syntaxErrors;
-
-    public void syntax_error(Symbol current_token) {
-        report_error(
-            "Syntax error at line " + (current_token.left+1) + ", column "
-            + current_token.right, null
-        );
-    }
-:};
 
 //  Usercode Components
 parser code {:
@@ -36,11 +24,9 @@ terminal            PLUS, LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, IF, ELSE, P
 terminal String     STRING_LITERAL, IDENTIFIER;        // our scanner provides numbers as strings
 
 // Non terminals
-non terminal            program, definition, call;
-//non terminal String
+non terminal        program, definition_list, definition, call_list, parameters_list, parameters, block, if_list, expr, string ;
 
-
-//  Precedence Declarations
+// Precedence Declarations
 // In contrast to JFlex, precedence in CUP works bottom to up.
 // That is, the earlier the declaration, the lower the precedence.
 precedence left PLUS;
@@ -48,12 +34,37 @@ precedence left PREFIX;
 precedence left REVERSE;
 
 
-// The Grammar Rules
+// // The Grammar Rules
 start with program;
-// The programms are concluded from function definitions and calls.
-program ::= definition:def call:cl {:System.out.println("public class Main{\n\tpublic static void main(String[] args){\n" + cl + "\t}\n" + def + "\n}"); :};
+// The programms are concluded from function definitions and calls. 
+// At the output we see the calls first and then the definitions.
+program ::= definition_list:def_ls call_list:cls {: System.out.println("public class Main{\n\tpublic static void main(String[] args){\n" + cls + "\t}\n" + def_ls + "\n}"); :}
+;
+// definition_list
+definition_list ::= definition_list:def_ls definition:def {: System.out.println("public static String " + def_ls + def); :}
+                | //empty
+;
+// definition
+definition ::= IDENTIFIER LPAREN parameters_list:prm_list RPAREN LBRACKET block:bl RBRACKET {:RESULT = prm_list; :}
+;
+// parameters_list
+// parameters are comma separated identifiers.
+parameters_list ::= parameters_list:prm_list parameters:prm
+                |  
+;   
+// parameters
+parameters ::= IDENTIFIER COMMA
+            | IDENTIFIER        
+;
 
-//definition
-definition ::= IDENTIFIER LPAREN 
+// Code block could be:
+// just a string
+// the arguments concatenated with + 
+// a series of if statements.
+block ::= string:str 
+        | expr:e1 PLUS  expr:e2 
+        | if_list:if_ls
+;
+
 
 
