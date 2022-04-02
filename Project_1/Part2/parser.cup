@@ -24,7 +24,7 @@ terminal            PLUS, LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, IF, ELSE, P
 terminal String     STRING_LITERAL, IDENTIFIER;        // our scanner provides numbers as strings
 
 // Non terminals
-non terminal        program, definition_list, definition, call_list, parameters_list, parameters, block, if_list, expr, string, _if_, if_expr, expr_list, exp, if_block, else_list, call ;
+non terminal        program, definition_list, definition, call_list, parameters_list, parameters, block, expr, if_else, call, condition, nested ;
 
 // Precedence Declarations
 // In contrast to JFlex, precedence in CUP works bottom to up.
@@ -45,7 +45,7 @@ definition_list ::= definition_list:def_ls definition:def {: System.out.println(
                 | //empty
 ;
 // definition
-definition ::= IDENTIFIER LPAREN parameters_list:prm_list RPAREN LBRACKET block:bl RBRACKET {:RESULT = prm_list; :}
+definition ::= call:c LBRACKET block:bl RBRACKET 
 ;
 // parameters_list
 // parameters are comma separated identifiers.
@@ -54,55 +54,43 @@ parameters_list ::= parameters_list:prm_list parameters:prm
 ;   
 // parameters
 parameters ::= IDENTIFIER COMMA
-            | IDENTIFIER        
+            | IDENTIFIER 
+            | STRING_LITERAL COMMA
+            | STRING_LITERAL      
 ;
 
 // Code block could be:
 // just a string
 // the arguments concatenated with + 
+// call of a function
 // a series of if statements.
-block ::= expr:e 
-        | if_list:if_ls
-;
-
-string ::= STRING_LITERAL
+block ::= expr:ex
+        | nested
 ;
 
 expr ::= expr:e1 PLUS expr:e2 
-        | string:str
-        | 
+        | IDENTIFIER
+        | STRING_LITERAL
 ;
 
-if_list ::= if_list:if_ls _if_:ifel
-            |_if_:ifel
+nested ::= if_else
+        | call
 ;
 
-_if_ ::= if_expr:if_ex if_block:if_bl else_list:el 
+if_else ::= IF LPAREN condition:cond RPAREN block:bl1 ELSE block:bl2 
 ;
 
-if_expr ::= IF LPAREN expr_list:el RPAREN
-;
-
-expr_list ::= expr_list:el exp:e
-            | exp:e
-;
-
-exp ::= exp PREFIX exp
-    | exp REVERSE
-    | REVERSE exp 
+condition ::= condition PREFIX condition
+    | condition REVERSE
+    | REVERSE condition 
     | STRING_LITERAL
 ;
 
-if_block ::= if_list:if_ls
-            | call:cl
-            | STRING_LITERAL
-            | IDENTIFIER
+call_list ::= call:c call_list:cl  
+            | 
 ;
 
-else_list ::= ELSE if_list
-            | ELSE call:cl
-            | ELSE STRING_LITERAL
-            | ELSE IDENTIFIER
+call ::= IDENTIFIER LPAREN parameters_list:p RPAREN
 ;
 
 
