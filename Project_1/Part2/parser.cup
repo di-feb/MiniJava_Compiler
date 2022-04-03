@@ -12,14 +12,7 @@ scan with {: return s.next_token(); :};
 
 
 // Symbol Lists
-// Terminals (tokens returned by the scanner).
-// Lexical Analysis is the process of converting a stream
-// of characters into a sequence of tokens.
-// A token represents a string with an assigned meaning
-// that describes a series of related lexemes.
-// A lexeme is a contiguous sequence of characters
-// that form a lexical unit in the grammar of a language.
-
+// Terminals (tokens returned by the lexer).
 terminal            PLUS, LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, IF, ELSE, PREFIX, REVERSE;
 terminal String     STRING_LITERAL, IDENTIFIER;        
 
@@ -32,7 +25,6 @@ non terminal        program, definition_list, definition, call_list, parameters_
 precedence left PLUS;
 precedence left PREFIX;
 precedence left REVERSE;
-
 
 // // The Grammar Rules
 start with program;
@@ -48,33 +40,34 @@ definition_list ::= definition_list:def_ls definition:def   {: RESULT = def_ls +
 definition ::= call:c LBRACKET block:bl RBRACKET  {: RESULT = ("\tpublic static String " + c + "{\n\t\t return " + bl + ";\n\t}"); :}
 ;
 
+//call_list
 call_list ::= call:c call_list:cl   {: RESULT = "\t\tSystem.out.println(" + ((String)c).replaceAll("String ","") + ");\n" + cl; :} 
             |                       {: RESULT = ""; :}  
 ;
 
+// call is something like => func( ... parameters_list ...)
 call ::= IDENTIFIER:id LPAREN parameters_list:p RPAREN  {: RESULT = id + "(" + p + ")"; :}
 ;
 // parameters_list
-// parameters are comma separated identifiers.
 parameters_list ::= parameters_list:p_list parameters:p {: RESULT = ((String)p_list + (String)p); :}
                 |                                       {: RESULT = ""; :}  
 ;   
-// parameters
+// parameters could produce on of below rules
 parameters ::= IDENTIFIER:id COMMA      {: RESULT = "String " + id + ", "; :}
             | IDENTIFIER:id             {: RESULT = "String " + id; :}
             | STRING_LITERAL:str COMMA  {: RESULT = "String " + "\"" + str + "\"" + ", "; :}
             | STRING_LITERAL:str        {: RESULT = "String " + "\"" + str + "\""; :}
-            | call:c                    {: RESULT = c; :}
-            | call:c COMMA              {: RESULT = c + ", "; :}
+            | call:c                    {: RESULT = c; :}           // a call could take for a parameter another call.Without a comma if it is the last argument.
+            | call:c COMMA              {: RESULT = c + ", "; :}    // With a comma if it is the first.
 ;
 
 // Code block could be:
-// just a string
+// just a string or identifier (f.e return a value)
 // the arguments concatenated with + 
 // call of a function
 // a series of if statements.
-block ::= expr:ex            {: RESULT = ex ; :}
-        | nested:n           {: RESULT = n ; :} 
+block ::= expr:ex            {: RESULT = ex ; :} // For just an expression
+        | nested:n           {: RESULT = n ; :}  // If a block has nested if or calls inside of it
 ;
 
 expr ::= expr:e1 PLUS expr:e2   {: RESULT = e1 + " + " + e2 ; :}
@@ -84,11 +77,13 @@ expr ::= expr:e1 PLUS expr:e2   {: RESULT = e1 + " + " + e2 ; :}
 
 nested ::= if_else:ifel       {: RESULT = ifel; :}    
         | call:c              {: RESULT = c; :} 
-;       
+; 
 
+// Represent the if_else statements as a ternaries so we do not have to deal with tabs counting
 if_else ::= IF LPAREN condition:cond RPAREN block:bl1 ELSE block:bl2 {:RESULT = "(" + cond +"?" + bl1 +":" + bl2 + ")"; :} 
 ;
 
+// Perfix and Reverse operator could be only inside the condition of the if statements.
 condition ::= condition:c1 PREFIX condition:c2  {: RESULT = "( " + c2 + " )." + "startsWith"  + "( " + c1 + " )"; :}                  
     | REVERSE condition:c                       {: RESULT =  "( " + c + " ).reverse() "; :}  
     | STRING_LITERAL:str                        {: RESULT = "\"" + str + "\""; :}

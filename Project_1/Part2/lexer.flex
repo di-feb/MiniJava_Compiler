@@ -64,6 +64,13 @@ Identifier = {Letter}{IdentifierCharacter}*
 
 %%
 /* ------------------------Lexical Rules Section---------------------- */
+// Lexical Analysis is the process of converting a stream
+// of characters into a sequence of tokens.
+// A token represents a string with an assigned meaning
+// that describes a series of related lexemes.
+// A lexeme is a contiguous sequence of characters
+// that form a lexical unit in the grammar of a language.
+
 <YYINITIAL> {
 // operators 
 // We must keep in mind that the order of the rules matters,
