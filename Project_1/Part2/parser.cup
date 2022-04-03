@@ -60,10 +60,10 @@ parameters_list ::= parameters_list:p_list parameters:p {: RESULT = ((String)p_l
                 |                                       {: RESULT = ""; :}  
 ;   
 // parameters
-parameters ::= IDENTIFIER:id COMMA      {: RESULT = id + ", "; :}
-            | IDENTIFIER:id             {: RESULT = id; :}
-            | STRING_LITERAL:str COMMA  {: RESULT = str + ", "; :}
-            | STRING_LITERAL:str        {: RESULT = str; :}
+parameters ::= IDENTIFIER:id COMMA      {: RESULT = "String " + id + ", "; :}
+            | IDENTIFIER:id             {: RESULT = "String " + id; :}
+            | STRING_LITERAL:str COMMA  {: RESULT = "String " + str + ", "; :}
+            | STRING_LITERAL:str        {: RESULT = "String " + str; :}
             | call:c                    {: RESULT = c; :}
 ;
 
