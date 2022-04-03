@@ -41,15 +41,15 @@ start with program;
 program ::= definition_list:def_ls call_list:cls {: System.out.println("public class Main{\n\tpublic static void main(String[] args){\n" + cls + "\t}\n" + def_ls + "\n}"); :}
 ;
 // definition_list
-definition_list ::= definition_list:def_ls definition:def {: RESULT = def_ls + "\n" + def; :}
-                |                                          
+definition_list ::= definition_list:def_ls definition:def   {: RESULT = def_ls + "\n" + def; :}
+                |                                           {: RESULT = ""; :}                                       
 ;
 // definition
 definition ::= call:c LBRACKET block:bl RBRACKET  {: RESULT = ("\tpublic static String " + c + "{\n\t\t" + bl + "\n\t}"); :}
 ;
 
-call_list ::= call:c call_list:cl  {: RESULT = "\t\tSystem.out.println(" + c + ");\n" + cl; :} 
-            | 
+call_list ::= call:c call_list:cl   {: RESULT = "\t\tSystem.out.println(" + c + ");\n" + cl; :} 
+            |                       {: RESULT = ""; :}  
 ;
 
 call ::= IDENTIFIER:id LPAREN parameters_list:p RPAREN  {: RESULT = id + "(" + p + ")"; :}
@@ -57,7 +57,7 @@ call ::= IDENTIFIER:id LPAREN parameters_list:p RPAREN  {: RESULT = id + "(" + p
 // parameters_list
 // parameters are comma separated identifiers.
 parameters_list ::= parameters_list:p_list parameters:p {: RESULT = ((String)p_list + ", " + (String)p); :}
-                |  
+                |                                       {: RESULT = ""; :}  
 ;   
 // parameters
 parameters ::= IDENTIFIER:id COMMA      {: RESULT = id + ", "; :}
