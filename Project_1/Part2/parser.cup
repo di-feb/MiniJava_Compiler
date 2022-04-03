@@ -21,7 +21,7 @@ scan with {: return s.next_token(); :};
 // that form a lexical unit in the grammar of a language.
 
 terminal            PLUS, LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, IF, ELSE, PREFIX, REVERSE;
-terminal String     STRING_LITERAL, IDENTIFIER;        // our scanner provides numbers as strings
+terminal String     STRING_LITERAL, IDENTIFIER;        
 
 // Non terminals
 non terminal        program, definition_list, definition, call_list, parameters_list, parameters, block, expr, if_else, call, condition, nested ;
@@ -52,7 +52,7 @@ call_list ::= call:c call_list:cl   {: RESULT = "\t\tSystem.out.println(" + c + 
             |                       {: RESULT = ""; :}  
 ;
 
-call ::= IDENTIFIER:id LPAREN parameters_list:p RPAREN  {: RESULT = id + "(" + p + ")"; :}
+call ::= IDENTIFIER:id LPAREN parameters_list:p RPAREN  {: RESULT = id + "(" + ((String)p).replaceAll("String ","") + ")"; :}
 ;
 // parameters_list
 // parameters are comma separated identifiers.
@@ -62,9 +62,10 @@ parameters_list ::= parameters_list:p_list parameters:p {: RESULT = ((String)p_l
 // parameters
 parameters ::= IDENTIFIER:id COMMA      {: RESULT = "String " + id + ", "; :}
             | IDENTIFIER:id             {: RESULT = "String " + id; :}
-            | STRING_LITERAL:str COMMA  {: RESULT = "String " + str + ", "; :}
-            | STRING_LITERAL:str        {: RESULT = "String " + str; :}
+            | STRING_LITERAL:str COMMA  {: RESULT = "String " + "\"" + str + "\"" + ", "; :}
+            | STRING_LITERAL:str        {: RESULT = "String " + "\"" + str + "\""; :}
             | call:c                    {: RESULT = c; :}
+            | call:c COMMA              {: RESULT = c + ", "; :}
 ;
 
 // Code block could be:
@@ -90,7 +91,7 @@ if_else ::= IF LPAREN condition:cond RPAREN block:bl1 ELSE block:bl2 {:RESULT = 
 
 condition ::= condition:c1 PREFIX condition:c2  {: RESULT = "( " + c2 + " )." + "startsWith"  + "( " + c1 + " )"; :}                  
     | REVERSE condition:c                       {: RESULT =  "( " + c + " ).reverse() "; :}  
-    | STRING_LITERAL:str                        {: RESULT = str; :}
+    | STRING_LITERAL:str                        {: RESULT = "\"" + str + "\""; :}
 ;
 
 
