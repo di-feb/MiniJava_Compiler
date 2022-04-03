@@ -72,8 +72,8 @@ parameters ::= IDENTIFIER:id COMMA      {: RESULT = id + ", "; :}
 // the arguments concatenated with + 
 // call of a function
 // a series of if statements.
-block ::= expr:ex            {: RESULT = "\t\treturn " + ex + ";\n\t}"; :}
-        | nested:n           {: RESULT = "\t\treturn " + n + ";\n\t}"; :} 
+block ::= expr:ex            {: RESULT = "return " + ex + ";"; :}
+        | nested:n           {: RESULT = "return " + n + ";"; :} 
 ;
 
 expr ::= expr:e1 PLUS expr:e2   {: RESULT = e1 + "+" + e2 ; :}
