@@ -45,14 +45,14 @@ definition_list ::= definition_list:def_ls definition:def   {: RESULT = def_ls +
                 |                                           {: RESULT = ""; :}                                       
 ;
 // definition
-definition ::= call:c LBRACKET block:bl RBRACKET  {: RESULT = ("\tpublic static String " + c + "{\n\t\t" + bl + "\n\t}"); :}
+definition ::= call:c LBRACKET block:bl RBRACKET  {: RESULT = ("\tpublic static String " + c + "{\n\t\t return " + bl + ";\n\t}"); :}
 ;
 
-call_list ::= call:c call_list:cl   {: RESULT = "\t\tSystem.out.println(" + c + ");\n" + cl; :} 
+call_list ::= call:c call_list:cl   {: RESULT = "\t\tSystem.out.println(" + ((String)c).replaceAll("String ","") + ");\n" + cl; :} 
             |                       {: RESULT = ""; :}  
 ;
 
-call ::= IDENTIFIER:id LPAREN parameters_list:p RPAREN  {: RESULT = id + "(" + ((String)p).replaceAll("String ","") + ")"; :}
+call ::= IDENTIFIER:id LPAREN parameters_list:p RPAREN  {: RESULT = id + "(" + p + ")"; :}
 ;
 // parameters_list
 // parameters are comma separated identifiers.
@@ -73,8 +73,8 @@ parameters ::= IDENTIFIER:id COMMA      {: RESULT = "String " + id + ", "; :}
 // the arguments concatenated with + 
 // call of a function
 // a series of if statements.
-block ::= expr:ex            {: RESULT = "return " + ex + ";"; :}
-        | nested:n           {: RESULT = "return " + n + ";"; :} 
+block ::= expr:ex            {: RESULT = ex ; :}
+        | nested:n           {: RESULT = n ; :} 
 ;
 
 expr ::= expr:e1 PLUS expr:e2   {: RESULT = e1 + " + " + e2 ; :}
@@ -86,12 +86,13 @@ nested ::= if_else:ifel       {: RESULT = ifel; :}
         | call:c              {: RESULT = c; :} 
 ;       
 
-if_else ::= IF LPAREN condition:cond RPAREN block:bl1 ELSE block:bl2 {:RESULT = "if( " + cond +"){\n\t" + bl1 +"\n}\n" + bl2; :} 
+if_else ::= IF LPAREN condition:cond RPAREN block:bl1 ELSE block:bl2 {:RESULT = "(" + cond +"?" + bl1 +":" + bl2 + ")"; :} 
 ;
 
 condition ::= condition:c1 PREFIX condition:c2  {: RESULT = "( " + c2 + " )." + "startsWith"  + "( " + c1 + " )"; :}                  
     | REVERSE condition:c                       {: RESULT =  "( " + c + " ).reverse() "; :}  
     | STRING_LITERAL:str                        {: RESULT = "\"" + str + "\""; :}
+    | IDENTIFIER:id                             {: RESULT = id; :}
 ;
 
 
