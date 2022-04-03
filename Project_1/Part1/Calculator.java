@@ -24,8 +24,10 @@ import java.io.IOException;
 
 class Calculator {
     public static void main(String[] args) {
+        String ANSI_GREEN = "\033[1;32m";
+        String ANSI_RESET = "\u001B[0m";
         try {
-            System.out.println((new Evaluator(System.in)).eval());
+            System.out.println(ANSI_GREEN + (new Evaluator(System.in)).eval() + ANSI_RESET);
         } catch (IOException | ParseError e) {
             System.err.println(e.getMessage());
         }
