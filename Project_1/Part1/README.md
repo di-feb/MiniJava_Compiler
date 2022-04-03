@@ -1,11 +1,5 @@
 ## <b>Compilers Project 1: LL(1) Calculator Parser  
 
-### <b>Προσωπικά στοιχεία
-
-- __Όνομα__: Στάθης Δεμέναγας
-
-- __Α.Μ.__: sdi1900045
-
 ### <b>Documentation
 Implements a simple calculator.   
 The calculator should accept expressions with   
@@ -23,13 +17,13 @@ The grammar (for single-digit numbers) is summarized in:
 
 First off, we need to remodel our grammar in order to meet the following requirements.
 1)  Support priority between the two operators ^, &.  
-    Για να το πετυχουμε αυτο θα πρεπει να φροντισουμε η γραμματικη   
-    να τοποθετει τον operator & που εχει υψηλοτερη precedence  
-    σε χαμηλοτερο επιπεδο στο parse tree, ετσι ωστε να ειναι ξεκαθαρο οτι για  
-    να ασχοληθουμε με τον τελεστη & θα πρεπει να εχουμε τελειωσει με τον ^.  
-    Αυτα σε περιπτωση που παρενθεσεις δεν μας αλλαζουν την precedence.      
+    To achieve this we must take care of grammar  
+     to place the operator & which has a higher precedence  
+     at a lower level in the parse tree, so that it is clear what for  
+     to deal with the operator & we should be done with ^.  
+     These in case parentheses do not change our precedence.      
 
-    H γραμματικη που θα προκυψει με βαση αυτα ειναι:  
+    The grammar that will emerge based on these is: 
 
         exp -> exp ^ term
             |  term
@@ -52,15 +46,9 @@ First off, we need to remodel our grammar in order to meet the following require
     
     Now to eliminate the left recursion we need to remodel our grammar one more time.  
     We will rewrite our grammar so that each non-terminal having a left-recursive rule   
-    will be replaced with two others. Στο πρωτο μη τερματικο θα καλει το δευτερο και η   
-    κληση του δευτερου μη τερματικου θα μας δινει ξεκαθαρη πληροφορια για τον πιο κανονα  
-    πρεπει να εφαρμοσουμε καθε φορα γιατι ολες οι παραγωγες θα εχουν μοναδικο πρωτο συμβολο.  
-    Πιο συγκεκριμενα το πρωτο μη τερματικο θα παραγει    
-    σαν κανονα το μη τερματικο που βγαινει κοινος παραγοντας απο τους κανονες του συν   
-    κατι ακομα εστω rest. Αυτο το rest θα γινει ενα νεο μη τερματικο με κανονες που παραγουν  
-    οτι εχει μηνει για να φτιαχτουν οι παλιοι κανονες του πρωτου τερματικου ετσι οπως ηταν   
-    πριν την αλλαγη χρησιμοποιωντας δεξια αναδρομη.Δηληδη η νεα γραμματικη μας θα μοιαζει   
-    καπως ετσι:   
+    will be replaced with two others.In the first non-terminal will call the second and  
+     calling the second non-terminal will give us clear information about the most common  
+     we have to apply every time because all producers will have a unique first symbol.  
 
         1) exp -> term rest
         
@@ -75,10 +63,10 @@ First off, we need to remodel our grammar in order to meet the following require
         7) factor -> num
         8)         | (exp)
 
-Tωρα θα δειξουμε οτι αυτη η νεα γραμματικη που φτιαξαμε και με βαση αυτην θα απαντησουμε στα  
-ερωτηματα ειναι LL(1). Εαν δεν ηταν LL(1) θα επρεπε να την κανουμε LL(1) χρησιμοποιοντας left factoring.  
+Now we will show that this new grammar we made and based on it we will answer the queries  
+are LL (1). If it was not LL (1) we would have to make it LL (1) using left factoring.    
 
-● Υπολολογιζουμε τα First ολων των παραγωγων.
+● We calculate the First of every produce.
 
     First(#1) = { term } = {'0'..'9', '('}
 
@@ -96,7 +84,7 @@ Tωρα θα δειξουμε οτι αυτη η νεα γραμματικη π�
 
     First(#8) = { '(' }
 
-● Υπολογιζουμε τα Follow ολων των μη τερματικων.
+● We calculate the Follow of every non terminal.
 
     Follow(exp) = {')', '$'}
 
@@ -108,7 +96,7 @@ Tωρα θα δειξουμε οτι αυτη η νεα γραμματικη π�
 
     Follow(factor) = {'&', ')', '^','$'}
 
-● Υπολογιζουμε τα First+ ολων των μη τερματικων.
+● We calculate the First+ of every non terminal.
 
     First+(exp) = {'0'..'9', '('}
 
@@ -120,12 +108,12 @@ Tωρα θα δειξουμε οτι αυτη η νεα γραμματικη π�
 
     First+(factor) = {'0'..'9', '('}
 
-Εφοσον βρικαμε τωρα τα First+ sets μπορουν να δουμε οτι
-ο ορισμος για το εαν μια γραμματικη ειναι LL(1) ικανοποιειται.
+Since we have now found the First + sets we can see that  
+the definition for if a grammar is LL (1) is satisfied.  
 
-Τωρα που η γραμματικη μας ειναι σε μορφη που μπορει να δεχτει 
-LL(1) parsing μπορουμε να κατασκευασουμε ενα a​ lookup table
-that will help us convert the above grammar into code.
+Now that our grammar is in a form that it can accept  
+LL (1) parsing we can build a lookup table  
+that will help us convert the above grammar into code.  
 
 ### **Lookahead Table**  
 
