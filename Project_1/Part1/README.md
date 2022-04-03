@@ -125,3 +125,6 @@ that will help us convert the above grammar into code.
 | **rest2**    | error           | ε             | & factor rest2    | error          | ε       | ε       |
 | **factor**   | num             | error         | error             | (exp)          | error   | error   |  
 
+### **How to compile and run:** 
+- We just write *make run* into the current directory.
+

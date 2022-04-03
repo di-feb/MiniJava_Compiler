@@ -33,4 +33,7 @@ We will do that by:
 - associativity: when two non-terminals produce the same rule up to a point   
 and we have a conflict we produce a non-terminal for both of them.  
 
-
+### **How to compile and execute:** 
+ *Compile*: Just write **make compile** into the current directory.  
+ *Execute*: Just write **make execute < Inputs/input_1.txt** into the current directory.   
+ Insine the directory inputs there are the three examples from the website of class.   
