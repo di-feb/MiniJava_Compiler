@@ -41,22 +41,30 @@ start with program;
 program ::= definition_list:def_ls call_list:cls {: System.out.println("public class Main{\n\tpublic static void main(String[] args){\n" + cls + "\t}\n" + def_ls + "\n}"); :}
 ;
 // definition_list
-definition_list ::= definition_list:def_ls definition:def {: System.out.println("public static String " + def_ls + def); :}
-                | //empty
+definition_list ::= definition_list:def_ls definition:def {: RESULT = def_ls + "\n" + def; :}
+                |                                          
 ;
 // definition
-definition ::= call:c LBRACKET block:bl RBRACKET 
+definition ::= call:c LBRACKET block:bl RBRACKET  {: RESULT = ("\tpublic static String " + c + "{\n\t\t" + bl + "\n\t}"); :}
+;
+
+call_list ::= call:c call_list:cl  {: RESULT = "\t\tSystem.out.println(" + c + ");\n" + cl; :} 
+            | 
+;
+
+call ::= IDENTIFIER:id LPAREN parameters_list:p RPAREN  {: RESULT = id + "(" + p + ")"; :}
 ;
 // parameters_list
 // parameters are comma separated identifiers.
-parameters_list ::= parameters_list:prm_list parameters:prm
+parameters_list ::= parameters_list:p_list parameters:p {: RESULT = ((String)p_list + ", " + (String)p); :}
                 |  
 ;   
 // parameters
-parameters ::= IDENTIFIER COMMA
-            | IDENTIFIER 
-            | STRING_LITERAL COMMA
-            | STRING_LITERAL      
+parameters ::= IDENTIFIER:id COMMA      {: RESULT = id + ", "; :}
+            | IDENTIFIER:id             {: RESULT = id; :}
+            | STRING_LITERAL:str COMMA  {: RESULT = str + ", "; :}
+            | STRING_LITERAL:str        {: RESULT = str; :}
+            | call:c                    {: RESULT = c; :}
 ;
 
 // Code block could be:
@@ -64,34 +72,27 @@ parameters ::= IDENTIFIER COMMA
 // the arguments concatenated with + 
 // call of a function
 // a series of if statements.
-block ::= expr:ex
-        | nested
+block ::= expr:ex            {: RESULT = "\t\treturn " + ex + ";\n\t}"; :}
+        | nested:n           {: RESULT = "\t\treturn " + n + ";\n\t}"; :} 
 ;
 
-expr ::= expr:e1 PLUS expr:e2 
-        | IDENTIFIER
-        | STRING_LITERAL
+expr ::= expr:e1 PLUS expr:e2   {: RESULT = e1 + "+" + e2 ; :}
+        | IDENTIFIER:id         {: RESULT = id ; :}  
+        | STRING_LITERAL:str    {: RESULT = "\"" + str + "\""; :}     
 ;
 
-nested ::= if_else
-        | call
+nested ::= if_else:ifel       {: RESULT = ifel; :}    
+        | call:c              {: RESULT = c; :} 
+;       
+
+if_else ::= IF LPAREN condition:cond RPAREN block:bl1 ELSE block:bl2 {:RESULT = "if( " + cond +"){\n\t" + bl1 +"\n}\n" + bl2; :} 
 ;
 
-if_else ::= IF LPAREN condition:cond RPAREN block:bl1 ELSE block:bl2 
+condition ::= condition:c1 PREFIX condition:c2  {: RESULT = "( " + c2 + " )." + "startsWith"  + "( " + c1 + " )"; :}                  
+    | REVERSE condition:c                       {: RESULT =  "( " + c + " ).reverse() "; :}  
+    | STRING_LITERAL:str                        {: RESULT = str; :}
 ;
 
-condition ::= condition PREFIX condition
-    | condition REVERSE
-    | REVERSE condition 
-    | STRING_LITERAL
-;
-
-call_list ::= call:c call_list:cl  
-            | 
-;
-
-call ::= IDENTIFIER LPAREN parameters_list:p RPAREN
-;
 
 
 
