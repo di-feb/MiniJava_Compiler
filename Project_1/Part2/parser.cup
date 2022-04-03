@@ -56,7 +56,7 @@ call ::= IDENTIFIER:id LPAREN parameters_list:p RPAREN  {: RESULT = id + "(" + p
 ;
 // parameters_list
 // parameters are comma separated identifiers.
-parameters_list ::= parameters_list:p_list parameters:p {: RESULT = ((String)p_list + ", " + (String)p); :}
+parameters_list ::= parameters_list:p_list parameters:p {: RESULT = ((String)p_list + (String)p); :}
                 |                                       {: RESULT = ""; :}  
 ;   
 // parameters
@@ -76,7 +76,7 @@ block ::= expr:ex            {: RESULT = "return " + ex + ";"; :}
         | nested:n           {: RESULT = "return " + n + ";"; :} 
 ;
 
-expr ::= expr:e1 PLUS expr:e2   {: RESULT = e1 + "+" + e2 ; :}
+expr ::= expr:e1 PLUS expr:e2   {: RESULT = e1 + " + " + e2 ; :}
         | IDENTIFIER:id         {: RESULT = id ; :}  
         | STRING_LITERAL:str    {: RESULT = "\"" + str + "\""; :}     
 ;
