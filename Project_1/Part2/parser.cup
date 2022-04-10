@@ -76,7 +76,7 @@ expr ::= expr:e1 PLUS expr:e2   {: RESULT = e1 + " + " + e2 ; :}
 ;
 
 nested ::= if_else:ifel       {: RESULT = ifel; :}    
-        | call:c              {: RESULT = c; :} 
+        | call:c              {: RESULT = ((String)c).replaceAll("String ",""); :} 
 ; 
 
 // Represent the if_else statements as a ternaries so we do not have to deal with tabs counting
@@ -88,6 +88,7 @@ condition ::= condition:c1 PREFIX condition:c2  {: RESULT = "( " + c2 + " )." + 
     | REVERSE condition:c                       {: RESULT =  "( " + c + " ).reverse() "; :}  
     | STRING_LITERAL:str                        {: RESULT = "\"" + str + "\""; :}
     | IDENTIFIER:id                             {: RESULT = id; :}
+    | call:c                                    {: RESULT = ((String)c).replaceAll("String ",""); :}
 ;
 
 
