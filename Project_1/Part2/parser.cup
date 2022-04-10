@@ -71,7 +71,7 @@ block ::= expr:ex            {: RESULT = ex ; :} // For just an expression
 ;
 
 expr ::= expr:e1 PLUS expr:e2   {: RESULT = e1 + " + " + e2 ; :}
-        | REVERSE expr:e        {: RESULT =  "( " + e + " ).reverse() "; :} 
+        | REVERSE expr:e        {: RESULT =  "(new StringBuilder(" + e + ").reverse().toString())"; :} 
         | IDENTIFIER:id         {: RESULT = id ; :}  
         | STRING_LITERAL:str    {: RESULT = "\"" + str + "\""; :}     
         | if_else:ifel          {: RESULT = ifel; :}    
