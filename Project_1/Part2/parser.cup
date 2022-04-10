@@ -17,13 +17,13 @@ terminal            PLUS, LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, IF, ELSE, P
 terminal String     STRING_LITERAL, IDENTIFIER;        
 
 // Non terminals
-non terminal        program, definition_list, definition, call_list, parameters_list, parameters, block, expr, if_else, call, condition, nested ;
+non terminal        program, definition_list, definition, call_list, parameters_list, parameters, block, expr, if_else, call, condition ;
 
 // Precedence Declarations
 // In contrast to JFlex, precedence in CUP works bottom to up.
 // That is, the earlier the declaration, the lower the precedence.
-precedence left PLUS;
 precedence left PREFIX;
+precedence left PLUS;
 precedence left REVERSE;
 
 // // The Grammar Rules
@@ -53,12 +53,14 @@ parameters_list ::= parameters_list:p_list parameters:p {: RESULT = ((String)p_l
                 |                                       {: RESULT = ""; :}  
 ;   
 // parameters could produce on of below rules
-parameters ::= IDENTIFIER:id COMMA      {: RESULT = "String " + id + ", "; :}
-            | IDENTIFIER:id             {: RESULT = "String " + id; :}
-            | STRING_LITERAL:str COMMA  {: RESULT = "String " + "\"" + str + "\"" + ", "; :}
-            | STRING_LITERAL:str        {: RESULT = "String " + "\"" + str + "\""; :}
-            | call:c                    {: RESULT = c; :}           // a call could take for a parameter another call.Without a comma if it is the last argument.
-            | call:c COMMA              {: RESULT = c + ", "; :}    // With a comma if it is the first.
+parameters ::= IDENTIFIER:id COMMA                          {: RESULT = "String " + id + ", "; :}
+            | IDENTIFIER:id                                 {: RESULT = "String " + id; :}
+            | STRING_LITERAL:str COMMA                      {: RESULT = "String " + "\"" + str + "\"" + ", "; :}
+            | STRING_LITERAL:str                            {: RESULT = "String " + "\"" + str + "\""; :}
+            | IDENTIFIER:id1 PLUS IDENTIFIER:id2            {: RESULT = id1 + " + " + id2 ; :}
+            | STRING_LITERAL:str1 PLUS STRING_LITERAL:str2  {: RESULT = "\"" + str1 + "\"" + " + " + "\"" + str2 + "\""; :}
+            | call:c                                        {: RESULT = c; :}           // a call could take for a parameter another call.Without a comma if it is the last argument.
+            | call:c COMMA                                  {: RESULT = c + ", "; :}    // With a comma if it is the first.
 ;
 
 // Code block could be:
@@ -67,28 +69,23 @@ parameters ::= IDENTIFIER:id COMMA      {: RESULT = "String " + id + ", "; :}
 // call of a function
 // a series of if statements.
 block ::= expr:ex            {: RESULT = ex ; :} // For just an expression
-        | nested:n           {: RESULT = n ; :}  // If a block has nested if or calls inside of it
 ;
 
 expr ::= expr:e1 PLUS expr:e2   {: RESULT = e1 + " + " + e2 ; :}
+        | REVERSE expr:e        {: RESULT =  "( " + e + " ).reverse() "; :} 
         | IDENTIFIER:id         {: RESULT = id ; :}  
         | STRING_LITERAL:str    {: RESULT = "\"" + str + "\""; :}     
+        | if_else:ifel          {: RESULT = ifel; :}    
+        | call:c                {: RESULT = ((String)c).replaceAll("String ",""); :} 
 ;
-
-nested ::= if_else:ifel       {: RESULT = ifel; :}    
-        | call:c              {: RESULT = ((String)c).replaceAll("String ",""); :} 
-; 
 
 // Represent the if_else statements as a ternaries so we do not have to deal with tabs counting
 if_else ::= IF LPAREN condition:cond RPAREN block:bl1 ELSE block:bl2 {:RESULT = "(" + cond +"?" + bl1 +":" + bl2 + ")"; :} 
 ;
 
 // Perfix and Reverse operator could be only inside the condition of the if statements.
-condition ::= condition:c1 PREFIX condition:c2  {: RESULT = "( " + c2 + " )." + "startsWith"  + "( " + c1 + " )"; :}                  
-    | REVERSE condition:c                       {: RESULT =  "( " + c + " ).reverse() "; :}  
-    | STRING_LITERAL:str                        {: RESULT = "\"" + str + "\""; :}
-    | IDENTIFIER:id                             {: RESULT = id; :}
-    | call:c                                    {: RESULT = ((String)c).replaceAll("String ",""); :}
+condition ::= expr:e1 PREFIX expr:e2  {: RESULT = "( " + e2 + " )." + "startsWith"  + "( " + e1 + " )"; :}                  
+            | expr:ex                 {: RESULT = ex; :}        
 ;
 
 
