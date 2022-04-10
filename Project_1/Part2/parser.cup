@@ -53,12 +53,11 @@ parameters_list ::= parameters_list:p_list parameters:p {: RESULT = ((String)p_l
                 |                                       {: RESULT = ""; :}  
 ;   
 // parameters could produce on of below rules
-parameters ::= IDENTIFIER:id COMMA                          {: RESULT = "String " + id + ", "; :}
+parameters ::= parameters:p1 PLUS parameters:p2             {: RESULT = p1 + "+" + p2; :}
+            | IDENTIFIER:id COMMA                           {: RESULT = "String " + id + ", "; :}
             | IDENTIFIER:id                                 {: RESULT = "String " + id; :}
             | STRING_LITERAL:str COMMA                      {: RESULT = "String " + "\"" + str + "\"" + ", "; :}
             | STRING_LITERAL:str                            {: RESULT = "String " + "\"" + str + "\""; :}
-            | IDENTIFIER:id1 PLUS IDENTIFIER:id2            {: RESULT = id1 + " + " + id2 ; :}
-            | STRING_LITERAL:str1 PLUS STRING_LITERAL:str2  {: RESULT = "\"" + str1 + "\"" + " + " + "\"" + str2 + "\""; :}
             | call:c                                        {: RESULT = c; :}           // a call could take for a parameter another call.Without a comma if it is the last argument.
             | call:c COMMA                                  {: RESULT = c + ", "; :}    // With a comma if it is the first.
 ;
