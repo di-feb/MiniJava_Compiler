@@ -1,10 +1,11 @@
-import java_cup.runtime.*;
-import java.io.*;
+public class Main{
+	public static void main(String[] args){
+		System.out.println(findLangType("Java"));
+		System.out.println(findLangType("Javascript"));
+		System.out.println(findLangType("Typescript"));
+	}
 
-class Main {
-    public static void main(String[] argv) throws Exception{
-        System.out.println("Please start typing:");
-        Parser p = new Parser(new Lexer(new InputStreamReader(System.in)));
-        p.parse();
-    }
+	public static String findLangType(String langName){
+		 return (( langName ).startsWith( "Java" )?(( "Java" ).startsWith( langName )?"Static":(( (new StringBuilder(langName).reverse().toString()) ).startsWith( (new StringBuilder("script").reverse().toString()) )?"Dynamic":"Unknown")):(( (new StringBuilder(langName).reverse().toString()) ).startsWith( (new StringBuilder("script").reverse().toString()) )?"Probably Dynamic":"Unknown"));
+	}
 }
