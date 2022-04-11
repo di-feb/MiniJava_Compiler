@@ -34,6 +34,11 @@ We will do that by:
 and we have a conflict we produce a non-terminal for both of them.  
 
 ### **How to compile and execute:** 
- *Compile*: Just write **make compile** into the current directory.  
- *Execute*: Just write **make execute < Inputs/input_1.txt** into the current directory.   
- Insine the directory inputs there are the three examples from the website of class.   
+ *Compile*: Just write *make compile* into the current directory.  
+ *Execute*: Just write *make execute* into the current directory.     
+ Insine the directory *Ιnputs* there are the three examples from the website of class,    
+ we can use them, as input for the parser, by changing the makefile.    
+ The code that generated from the parser it will be redirected to a Main.java file    
+ that will be produced the moment we run the above command.  
+ We will compile and run the Main.java file and we will get the output at the terminal.  
+
