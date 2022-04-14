@@ -11,7 +11,7 @@ compile:
 	$(JC) -cp ../java-cup-11b-runtime.jar *.java
 
 execute:
-	$(J) -cp java-cup-11b-runtime.jar:. MyMain < Inputs/input_3.txt > $(MAIN)
+	$(J) -cp ../java-cup-11b-runtime.jar:. MyMain < ../Inputs/input_3.txt > $(MAIN)
 	$(JC) $(MAIN)  
 	$(J) $(CLASSES) $(ARGS)
 
