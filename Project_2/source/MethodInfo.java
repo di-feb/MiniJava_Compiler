@@ -11,8 +11,8 @@ public class MethodInfo {
 
     // Constructor
     MethodInfo(){
-        this.arguments = new Vector<String>();
-        this.vars = new Vector<String>();
+        arguments = new Vector<String>();
+        vars = new Vector<String>();
     }
 
     // Accessors
@@ -20,4 +20,4 @@ public class MethodInfo {
     public Integer getOffset() { return offset; }
     public Vector < String > getArgs(){ return arguments; }
     public Vector < String > getVars(){ return vars; }
-}
+} 
