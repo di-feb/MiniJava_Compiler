@@ -8,6 +8,9 @@ import syntaxtree.*;
 public class DeclCollector extends GJDepthFirst< String, String >{
     private Map <String, Data> symbol_table;
 
+    public DeclCollector(){
+        this.symbol_table = new Map < String, Data >();
+    }
     /** Goal
     * f0 -> MainClass()
     * f1 -> ( TypeDeclaration() )*
