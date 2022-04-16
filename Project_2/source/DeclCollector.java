@@ -47,7 +47,7 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
 
         // Allocate memory for a Data Object to fill it up with the info
         // provided by VarDecls and Statements.
-        Data mains_data = new Data();
+        Data mains_data = new Data(null);
 
         // Pass mains_data down to parse tree to collect the info
         for( int i = 0; i < n.f14.size(); i++ )
@@ -65,7 +65,7 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     * f0 -> ClassDeclaration()
     *       | ClassExtendsDeclaration()
     */
-    public R visit(TypeDeclaration n, Data data) throws Exception {
+    public String visit(TypeDeclaration n, Data data) throws Exception {
         n.f0.accept(this, null);
         return null;
     }  
@@ -86,12 +86,12 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         // Check if the name of the class already existed inside the symbol table.
         // If it does that means we have redeclare a class.
         // We do not want that => Throw Semantic Error! 
-        if(sumbol_table.containsKey(name))
-            throw new SemError();
+        if(symbol_table.containsKey(name))
+            throw new SemanticError();
 
         // Allocate memory for a Data Object to fill it up with the info
         // provided by VarDecls and Methods.
-        Data class_data = new Data();
+        Data class_data = new Data(null);
 
         // Pass mains_data down to parse tree to collect the info
         for( int i = 0; i < n.f3.size(); i++ )
@@ -114,37 +114,37 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
 
     class f1 extends f3{
         f5
-        f5
+        f6
     }
     */
-    public R visit(ClassExtendsDeclaration n, A argu) throws Exception {
+    public String visit(ClassExtendsDeclaration n, Data data) throws Exception {
         // Keep the name of the "main" class
         String name = n.f1.accept(this, null);
 
         // Check if the name of the class already existed inside the symbol table.
         // If it does that means we have redeclare a class.
         // We do not want that => Throw Semantic Error! 
-        if(sumbol_table.containsKey(name))
-            throw new SemError();
+        if(symbol_table.containsKey(name))
+            throw new SemanticError();
 
         // Check if the name of the parent class not existed inside the symbol table.
         // If it does not that means we have declare a class whose parent class has not been declared yet.
         // We do not want that => Throw Semantic Error! 
         String parent_name = n.f3.accept(this, null);
-        if(!sumbol_table.containsKey(parent_name))
-            throw new SemError();
+        if(!symbol_table.containsKey(parent_name))
+            throw new SemanticError();
 
         // Allocate memory for a Data Object to fill it up with the info
         // provided by VarDecls and Methods.
         // Every child class has all the methods and vars of the parent class too.
-        Data class_data = new Data();
+        Data class_data = new Data(null);
 
         // Pass mains_data down to parse tree to collect the info
-        for( int i = 0; i < n.f3.size(); i++ )
-            n.f3.elementAt(i).accept(this, class_data);
+        for( int i = 0; i < n.f5.size(); i++ )
+            n.f5.elementAt(i).accept(this, class_data);
 
-        for( int i = 0; i < n.f4.size(); i++ )
-            n.f4.elementAt(i).accept(this, class_data);
+        for( int i = 0; i < n.f6.size(); i++ )
+            n.f6.elementAt(i).accept(this, class_data);
 
         // After the infos for the "main" classes gathered push the data into the Map
         symbol_table.put(name, class_data);
@@ -157,7 +157,7 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     * f2 -> ";"
     */
     public String visit(VarDeclaration n, Data data) throws Exception {
-
+        return null;
     }
     
 }
