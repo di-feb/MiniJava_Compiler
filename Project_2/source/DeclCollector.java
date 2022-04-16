@@ -57,10 +57,107 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
             n.f15.elementAt(i).accept(this, mains_data);
 
         // After the infos for the "main" classes gathered push the data into the Map
-        symbol_table.put(name, data);
+        symbol_table.put(name, mains_data);
+        return null;
+    }
+
+    /** TypeDeclaration
+    * f0 -> ClassDeclaration()
+    *       | ClassExtendsDeclaration()
+    */
+    public R visit(TypeDeclaration n, Data data) throws Exception {
+        n.f0.accept(this, null);
+        return null;
+    }  
+
+    /** ClassDeclaration
+    * f1 -> Identifier()
+    * f3 -> ( VarDeclaration() )*
+    * f4 -> ( MethodDeclaration() )*
+
+    class f1 {
+        f3
+        f4
+    }
+    */
+    public String visit(ClassDeclaration n, Data data) throws Exception {
+        // Keep the name of the "main" class
+        String name = n.f1.accept(this, null);
+        // Check if the name of the class already existed inside the symbol table.
+        // If it does that means we have redeclare a class.
+        // We do not want that => Throw Semantic Error! 
+        if(sumbol_table.containsKey(name))
+            throw new SemError();
+
+        // Allocate memory for a Data Object to fill it up with the info
+        // provided by VarDecls and Methods.
+        Data class_data = new Data();
+
+        // Pass mains_data down to parse tree to collect the info
+        for( int i = 0; i < n.f3.size(); i++ )
+            n.f3.elementAt(i).accept(this, class_data);
+
+        for( int i = 0; i < n.f4.size(); i++ )
+            n.f4.elementAt(i).accept(this, class_data);
+
+        // After the infos for the "main" classes gathered push the data into the Map
+        symbol_table.put(name, class_data);
         return null;
     }
 
 
+    /**
+    * f1 -> Identifier()
+    * f3 -> Identifier()
+    * f5 -> ( VarDeclaration() )*
+    * f6 -> ( MethodDeclaration() )*
+
+    class f1 extends f3{
+        f5
+        f5
+    }
+    */
+    public R visit(ClassExtendsDeclaration n, A argu) throws Exception {
+        // Keep the name of the "main" class
+        String name = n.f1.accept(this, null);
+
+        // Check if the name of the class already existed inside the symbol table.
+        // If it does that means we have redeclare a class.
+        // We do not want that => Throw Semantic Error! 
+        if(sumbol_table.containsKey(name))
+            throw new SemError();
+
+        // Check if the name of the parent class not existed inside the symbol table.
+        // If it does not that means we have declare a class whose parent class has not been declared yet.
+        // We do not want that => Throw Semantic Error! 
+        String parent_name = n.f3.accept(this, null);
+        if(!sumbol_table.containsKey(parent_name))
+            throw new SemError();
+
+        // Allocate memory for a Data Object to fill it up with the info
+        // provided by VarDecls and Methods.
+        // Every child class has all the methods and vars of the parent class too.
+        Data class_data = new Data();
+
+        // Pass mains_data down to parse tree to collect the info
+        for( int i = 0; i < n.f3.size(); i++ )
+            n.f3.elementAt(i).accept(this, class_data);
+
+        for( int i = 0; i < n.f4.size(); i++ )
+            n.f4.elementAt(i).accept(this, class_data);
+
+        // After the infos for the "main" classes gathered push the data into the Map
+        symbol_table.put(name, class_data);
+        return null;
+    }
+
+    /**
+    * f0 -> Type()
+    * f1 -> Identifier()
+    * f2 -> ";"
+    */
+    public String visit(VarDeclaration n, Data data) throws Exception {
+
+    }
     
 }
