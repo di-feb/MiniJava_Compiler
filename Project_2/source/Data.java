@@ -11,13 +11,21 @@ import syntaxtree.*;
 public class Data {
     // Name of the ParentClass of this current class
     // if parent class does not exist string is Null
-    String parentClassName;                 
-    Map < String, MethodInfo > method_info; // Key:Method_Name, Value:Class that contains info about that method
-    Map < String, VarInfo > var_info;       // Key:Var_Name, Value:Class that contains info about that var
+    final private String parentClassName;                 
+    private Map < String, MethodInfo > method_info; // Key:Method_Name, Value:Class that contains info about that method
+    private Map < String, VarInfo > var_info;       // Key:Var_Name, Value:Class that contains info about that var
 
+    // Constructor
     Data(String parentName){
         parentClassName = parentName;
         method_info = new LinkedHashMap<String, MethodInfo>();
         var_info = new LinkedHashMap<String, VarInfo>();
     }
+
+    // Accessors
+    public String getName(){ return parentClassName; }
+    public MethodInfo getMethod_Info() { return method_info.getValue(); }
+    public MethodInfo getVar_Info() { return var_info.getValue(); }
+
+
 }
