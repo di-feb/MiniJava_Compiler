@@ -1,5 +1,6 @@
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.LinkedHashMap; 
 import visitor.GJDepthFirst;
@@ -13,4 +14,10 @@ public class Data {
     String parentClassName;                 
     Map < String, MethodInfo > method_info; // Key:Method_Name, Value:Class that contains info about that method
     Map < String, VarInfo > var_info;       // Key:Var_Name, Value:Class that contains info about that var
+
+    Data(String parentName){
+        parentClassName = parentName;
+        method_info = new LinkedHashMap<String, MethodInfo>();
+        var_info = new LinkedHashMap<String, VarInfo>();
+    }
 }
