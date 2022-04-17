@@ -24,8 +24,7 @@ public class Data {
 
     // Accessors
     public String getName(){ return parentClassName; }
-    public MethodInfo getMethod_Info() { return method_info.getValue(); }
-    public MethodInfo getVar_Info() { return var_info.getValue(); }
-
+    public Map getMethod_Info() { return method_info; }
+    public Map getVar_Info() { return var_info; }
 
 }
