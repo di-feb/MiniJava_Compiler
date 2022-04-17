@@ -20,4 +20,8 @@ public class MethodInfo {
     public Integer getOffset() { return offset; }
     public Vector < String > getArgs(){ return arguments; }
     public Vector < String > getVars(){ return vars; }
+
+    // Mutators
+    public void setType(String _type_){ this.type = _type_; }
+    public void setOffset(Integer _offset_){ this.offset = _offset_; }
 } 
