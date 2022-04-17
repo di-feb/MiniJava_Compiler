@@ -137,7 +137,12 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         // Allocate memory for a Data Object to fill it up with the info
         // provided by VarDecls and Methods.
         // Every child class has all the methods and vars of the parent class too.
-        Data class_data = new Data(null);
+        Data class_data = new Data(parent_name);
+        Data parentData = symbol_table.get(parent_name);
+        
+        // Copy all info for the parent methods and vars to the child
+        class_data.getMethod_Info().putAll(parentData.getMethod_Info());
+        class_data.getVar_Info().putAll(parentData.getVar_Info());
 
         // Pass mains_data down to parse tree to collect the info
         for( int i = 0; i < n.f5.size(); i++ )
@@ -151,13 +156,24 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         return null;
     }
 
-    /**
+    /** VarDeclaration
     * f0 -> Type()
     * f1 -> Identifier()
     * f2 -> ";"
     */
     public String visit(VarDeclaration n, Data data) throws Exception {
+        // Keep the name and the type off the var.
+        String var_type = n.f0.accept(this, null);
+        String var_name = n.f1.accept(this, null);
+
+        // Make a VarInfo class to store the info you get,
+        // and then pass the varInfo into the Data. 
+        VarInfo vars_value = new VarInfo();
+        vars_value.setType(var_type);
+        vars_value.setOffset(0); // We will deal with offset later!!!
+
+        data.getVar_Info().put(var_name, vars_value);
+
         return null;
-    }
-    
+    }  
 }
