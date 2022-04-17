@@ -1,4 +1,5 @@
 import java.util.Map;
+import java.util.Vector;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.LinkedHashMap; 
@@ -106,7 +107,7 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     }
 
 
-    /**
+    /** ClassExtendsDeclaration
     * f1 -> Identifier()
     * f3 -> Identifier()
     * f5 -> ( VarDeclaration() )*
@@ -176,4 +177,96 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
 
         return null;
     }  
+
+    /** MethodDeclaration
+    * f1 -> Type()
+    * f2 -> Identifier()
+    * f4 -> ( FormalParameterList() )?
+    * f7 -> ( VarDeclaration() )*
+    * f8 -> ( Statement() )*
+    * f10 -> Expression()
+
+    *   public f1 f2( f4 ){
+            f7
+            f8
+            return f10;
+        }
+    */
+    public String visit(MethodDeclaration n, Data data) throws Exception {
+        String ret_type = n.f1.accept(this, null);   
+        String method_name = n.f2.accept(this, null); 
+
+        // If the method has arguments store them inside MethodInfo class of Data
+        if(n.f4.present())
+            n.f4.accept(this, null);
+         
+        // Make a VarInfo class to store the info you get,
+        // and then pass the varInfo into the Data. 
+        MethodInfo method_value = new MethodInfo();
+        method_value.setType(ret_type);
+        vars_value.setOffset(0); // We will deal with offset later!!!
+
+        // Pass data down to parse tree to collect the info
+        for( int i = 0; i < n.f7.size(); i++ )
+            n.f7.elementAt(i).accept(this, data);
+
+        for( int i = 0; i < n.f8.size(); i++ )
+            n.f8.elementAt(i).accept(this, data);
+
+        data.getMethod_Info().put(method_name, method_value);
+
+        return null;
+    }
+
+
+    /** FormalParameterList
+    * f0 -> FormalParameter()
+    * f1 -> FormalParameterTail()
+    */
+    // It will go and fill up recursivly the args field of the method_info field of the Data class
+    public String visit(FormalParameterList n, Data data) throws Exception {
+        data.getMethod_Info().getArgs().add(n.f0.accept(this, null));   
+        n.f1.accept(this, null);   
+        return null;
+    }
+
+    /** FormalParameter
+    * f0 -> Type()
+    * f1 -> Identifier()
+    */
+    public String visit(FormalParameter n, Data data) throws Exception {
+        String type = n.f0.accept(this, null);   
+        String name = n.f1.accept(this, null);
+        return type + "" + name;
+    }
+
+    /** FormalParameterTail
+    * f0 -> ( FormalParameterTerm() )*
+    */
+    public String visit(FormalParameterTail n, Data data) throws Exception {
+        for( int i = 0; i < n.f0.size(); i++ )
+            data.getMethod_Info().getArgs().add(n.f0.elementAt(i).accept(this, null));
+        return null;
+    }
+
+    /** FormalParameterTerm
+    * f0 -> ","
+    * f1 -> FormalParameter()
+    */
+    public String visit(FormalParameterTerm n, Data data) throws Exception {   
+        String parameter = n.f1.accept(this, null);
+        return parameter;
+    }
+
+    /**
+    * f0 -> ArrayType()
+    *       | BooleanType()
+    *       | IntegerType()
+    *       | Identifier()
+    */
+    public String visit(Type n, Data data) throws Exception {
+
+
+        return null;
+    }
 }
