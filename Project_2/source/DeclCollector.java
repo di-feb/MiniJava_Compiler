@@ -142,8 +142,8 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         Data parentData = symbol_table.get(parent_name);
         
         // Copy all info for the parent methods and vars to the child
-        class_data.getMethod_Info().putAll(parentData.getMethod_Info());
-        class_data.getVar_Info().putAll(parentData.getVar_Info());
+        class_data.getMethods().putAll(parentData.getMethods());
+        class_data.getVars().putAll(parentData.getVars());
 
         // Pass mains_data down to parse tree to collect the info
         for( int i = 0; i < n.f5.size(); i++ )
@@ -173,7 +173,7 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         vars_value.setType(var_type);
         vars_value.setOffset(0); // We will deal with offset later!!!
 
-        data.getVar_Info().put(var_name, vars_value);
+        data.getVars().put(var_name, vars_value);
 
         return null;
     }  
@@ -195,16 +195,21 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     public String visit(MethodDeclaration n, Data data) throws Exception {
         String ret_type = n.f1.accept(this, null);   
         String method_name = n.f2.accept(this, null); 
+        String parameters = null;
 
-        // If the method has arguments store them inside MethodInfo class of Data
+        // If the method has arguments accept will return a string with the arguments in a way like this:
+        // (type id, type id, ...)
         if(n.f4.present())
-            n.f4.accept(this, null);
+            parameters = n.f4.accept(this, null);
          
         // Make a VarInfo class to store the info you get,
         // and then pass the varInfo into the Data. 
         MethodInfo method_value = new MethodInfo();
         method_value.setType(ret_type);
-        vars_value.setOffset(0); // We will deal with offset later!!!
+        method_value.setParameters(parameters);
+        method_value.setOffset(0); // We will deal with offset later!!!
+
+        data.getMethods().put(method_name, method_value);
 
         // Pass data down to parse tree to collect the info
         for( int i = 0; i < n.f7.size(); i++ )
@@ -213,7 +218,6 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         for( int i = 0; i < n.f8.size(); i++ )
             n.f8.elementAt(i).accept(this, data);
 
-        data.getMethod_Info().put(method_name, method_value);
 
         return null;
     }
@@ -225,9 +229,9 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     */
     // It will go and fill up recursivly the args field of the method_info field of the Data class
     public String visit(FormalParameterList n, Data data) throws Exception {
-        data.getMethod_Info().getArgs().add(n.f0.accept(this, null));   
-        n.f1.accept(this, null);   
-        return null;
+        String parameter = n.f0.accept(this, null);   
+        String parameter_tail = n.f1.accept(this, null);   
+        return parameter + parameter_tail;
     }
 
     /** FormalParameter
@@ -244,9 +248,10 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     * f0 -> ( FormalParameterTerm() )*
     */
     public String visit(FormalParameterTail n, Data data) throws Exception {
+        String parameter_tail = "";
         for( int i = 0; i < n.f0.size(); i++ )
-            data.getMethod_Info().getArgs().add(n.f0.elementAt(i).accept(this, null));
-        return null;
+            parameter_tail += n.f0.elementAt(i).accept(this, null);
+        return parameter_tail;
     }
 
     /** FormalParameterTerm
@@ -255,18 +260,56 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     */
     public String visit(FormalParameterTerm n, Data data) throws Exception {   
         String parameter = n.f1.accept(this, null);
-        return parameter;
+        return ", " + parameter;
     }
 
-    /**
+    /** Type
     * f0 -> ArrayType()
     *       | BooleanType()
     *       | IntegerType()
     *       | Identifier()
     */
     public String visit(Type n, Data data) throws Exception {
+        return n.f0.accept(this, null);
+    }
 
+    /** ArrayType
+    * f0 -> BooleanArrayType()
+    *       | IntegerArrayType()
+    */
+    public String visit(ArrayType n, Data data) throws Exception {
+        return n.f0.accept(this, null);
+    }
 
-        return null;
+    /** BooleanArrayType 
+    * f0 -> "boolean"
+    * f1 -> "["
+    * f2 -> "]"
+    */
+    public String visit(BooleanArrayType n, Data data) throws Exception {
+        return "boolean []";
+    }
+
+    /** IntegerArrayType
+    * f0 -> "int"
+    * f1 -> "["
+    * f2 -> "]"
+    */
+    public String visit(IntegerArrayType n, Data data) throws Exception {
+        return "int []";
+    }
+
+    /**
+    * f0 -> "boolean"
+    */
+    public String visit(BooleanType n, Data data) throws Exception {
+        return "boolean";
+    }
+
+    /**
+    * f0 -> "int"
+    */
+    public String visit(IntegerType n, Data data) throws Exception {
+        return "int";
     }
 }
