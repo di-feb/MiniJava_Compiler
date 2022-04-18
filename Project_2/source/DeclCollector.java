@@ -203,11 +203,26 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         String method_name = n.f2.accept(this, null); 
         List<String> parameters = new ArrayList<String>();
 
-        // If method_name already existed inside data.getMethods map it means,
+        // If method_name already existed inside data.getMethods map 
+        // and it is not part of a sub class it means, 
         // we had a redeclaration of that method inside the same class.
         // We do not want that => Throw Semantic Error!
-        if(data.getMethods().containsKey(method_name))
+        if(data.getMethods().containsKey(method_name) && data.getName() == null)
             throw new SemanticError();
+
+        // If method_name already existed inside data.getMethods map 
+        // but it is part of a sub class, we need to make sure that 
+        // the args of the two methods are the same.
+        // If not => Throw Semantic Error!
+        if(data.getMethods().containsKey(method_name) && data.getName() != null){
+            List<String> childArgs = new ArrayList<String>();
+            List<String> parentArgs = new ArrayList<String>();
+            childArgs = data.getMethods().get(method_name).getArgs();
+            parentArgs = data.getMethods().get(data.getName()).getArgs();
+            if(childArgs.equals(parentArgs) == false)
+                throw new SemanticError();
+
+        }
 
         // If the method has arguments accept will return a string with the arguments in a way like this:
         // (type id, type id, ...)
