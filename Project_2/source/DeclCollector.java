@@ -1,6 +1,6 @@
 import java.util.Map;
-import java.util.Vector;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.LinkedHashMap; 
 import visitor.GJDepthFirst;
@@ -167,6 +167,12 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         String var_type = n.f0.accept(this, null);
         String var_name = n.f1.accept(this, null);
 
+        // If var_name already existed inside data.getVars map it means,
+        // we had a redeclaration of that variable inside the same class.
+        // We do not want that => Throw Semantic Error!
+        if(data.getVars().containsKey(var_name))
+            throw new SemanticError();
+
         // Make a VarInfo class to store the info you get,
         // and then pass the varInfo into the Data. 
         VarInfo vars_value = new VarInfo();
@@ -195,13 +201,30 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     public String visit(MethodDeclaration n, Data data) throws Exception {
         String ret_type = n.f1.accept(this, null);   
         String method_name = n.f2.accept(this, null); 
-        String parameters = null;
+        List<String> parameters = new ArrayList<String>();
+
+        // If method_name already existed inside data.getMethods map it means,
+        // we had a redeclaration of that method inside the same class.
+        // We do not want that => Throw Semantic Error!
+        if(data.getMethods().containsKey(method_name))
+            throw new SemanticError();
 
         // If the method has arguments accept will return a string with the arguments in a way like this:
         // (type id, type id, ...)
-        if(n.f4.present())
-            parameters = n.f4.accept(this, null);
-         
+        if(n.f4.present()) {
+            List<String> list = new ArrayList<String>();
+            parameters = Arrays.asList(n.f4.accept(this, null).split(","));
+            // Take only the name of the variable and store it to a list to check
+            // for redeclaration.
+            for( int i = 0; i < parameters.size(); i++){
+                list.add(Arrays.asList(parameters.get(i).split(" ")).get(1));
+                for(String var1: list)
+                    for(String var2: list)
+                        if(var1.equals(var2))
+                            throw new SemanticError();
+            }
+        }
+
         // Make a VarInfo class to store the info you get,
         // and then pass the varInfo into the Data. 
         MethodInfo method_value = new MethodInfo();
@@ -211,13 +234,9 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
 
         data.getMethods().put(method_name, method_value);
 
-        // Pass data down to parse tree to collect the info
+        // Pass data down to parse tree to collect the info 
         for( int i = 0; i < n.f7.size(); i++ )
             n.f7.elementAt(i).accept(this, data);
-
-        for( int i = 0; i < n.f8.size(); i++ )
-            n.f8.elementAt(i).accept(this, data);
-
 
         return null;
     }
@@ -241,7 +260,7 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     public String visit(FormalParameter n, Data data) throws Exception {
         String type = n.f0.accept(this, null);   
         String name = n.f1.accept(this, null);
-        return type + "" + name;
+        return type + " " + name;
     }
 
     /** FormalParameterTail
