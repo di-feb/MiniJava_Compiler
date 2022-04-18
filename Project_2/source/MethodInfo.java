@@ -6,22 +6,20 @@ import syntaxtree.*;
 public class MethodInfo {
     private String returnType;            // Return type of the method
     private Integer offset;               // Offset of the method
-    private Vector < String > arguments;  // Args of the method
-    private Vector < String > vars;       // Any other var that has been declared inside the scope of the method
+    private Vector < String > parameters;  // Args of the method
 
     // Constructor
     MethodInfo(){
-        arguments = new Vector<String>();
-        vars = new Vector<String>();
+        parameters = new Vector<String>();
     }
 
     // Accessors
     public String getType(){ return returnType; }
     public Integer getOffset() { return offset; }
-    public Vector < String > getArgs(){ return arguments; }
-    public Vector < String > getVars(){ return vars; }
+    public Vector < String > getArgs(){ return parameters; }
 
     // Mutators
-    public void setType(String _type_){ this.type = _type_; }
+    public void setType(String _type_){ this.returnType = _type_; }
     public void setOffset(Integer _offset_){ this.offset = _offset_; }
+    public void setParameters(String param){ this.parameters.putAll(param.split(",")); }
 } 
