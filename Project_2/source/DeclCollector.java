@@ -82,13 +82,8 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     }
     */
     public String visit(ClassDeclaration n, Data data) throws Exception {
-        // Keep the name of the "main" class
+        // Keep the name of the class
         String name = n.f1.accept(this, null);
-        // Check if the name of the class already existed inside the symbol table.
-        // If it does that means we have redeclare a class.
-        // We do not want that => Throw Semantic Error! 
-        if(symbol_table.containsKey(name))
-            throw new SemanticError();
 
         // Allocate memory for a Data Object to fill it up with the info
         // provided by VarDecls and Methods.
@@ -101,7 +96,7 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         for( int i = 0; i < n.f4.size(); i++ )
             n.f4.elementAt(i).accept(this, class_data);
 
-        // After the infos for the "main" classes gathered push the data into the Map
+        // After the infos for the class gathered push the data into the Map
         symbol_table.put(name, class_data);
         return null;
     }
@@ -119,21 +114,10 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     }
     */
     public String visit(ClassExtendsDeclaration n, Data data) throws Exception {
-        // Keep the name of the "main" class
+        // Keep the name of the class
         String name = n.f1.accept(this, null);
-
-        // Check if the name of the class already existed inside the symbol table.
-        // If it does that means we have redeclare a class.
-        // We do not want that => Throw Semantic Error! 
-        if(symbol_table.containsKey(name))
-            throw new SemanticError();
-
-        // Check if the name of the parent class not existed inside the symbol table.
-        // If it does not that means we have declare a class whose parent class has not been declared yet.
-        // We do not want that => Throw Semantic Error! 
+        // Keep the name of the parent class
         String parent_name = n.f3.accept(this, null);
-        if(!symbol_table.containsKey(parent_name))
-            throw new SemanticError();
 
         // Allocate memory for a Data Object to fill it up with the info
         // provided by VarDecls and Methods.
@@ -145,14 +129,14 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         class_data.getMethods().putAll(parentData.getMethods());
         class_data.getVars().putAll(parentData.getVars());
 
-        // Pass mains_data down to parse tree to collect the info
+        // Pass class_data down to parse tree to collect the info
         for( int i = 0; i < n.f5.size(); i++ )
             n.f5.elementAt(i).accept(this, class_data);
 
         for( int i = 0; i < n.f6.size(); i++ )
             n.f6.elementAt(i).accept(this, class_data);
 
-        // After the infos for the "main" classes gathered push the data into the Map
+        // After the infos for the class gathered push the data into the Map
         symbol_table.put(name, class_data);
         return null;
     }
@@ -166,12 +150,6 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         // Keep the name and the type off the var.
         String var_type = n.f0.accept(this, null);
         String var_name = n.f1.accept(this, null);
-
-        // If var_name already existed inside data.getVars map it means,
-        // we had a redeclaration of that variable inside the same class.
-        // We do not want that => Throw Semantic Error!
-        if(data.getVars().containsKey(var_name))
-            throw new SemanticError();
 
         // Make a VarInfo class to store the info you get,
         // and then pass the varInfo into the Data. 
@@ -203,42 +181,8 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         String method_name = n.f2.accept(this, null); 
         List<String> parameters = new ArrayList<String>();
 
-        // If method_name already existed inside data.getMethods map 
-        // and it is not part of a sub class it means, 
-        // we had a redeclaration of that method inside the same class.
-        // We do not want that => Throw Semantic Error!
-        if(data.getMethods().containsKey(method_name) && data.getName() == null)
-            throw new SemanticError();
-
-        // If method_name already existed inside data.getMethods map 
-        // but it is part of a sub class, we need to make sure that 
-        // the args of the two methods are the same.
-        // If not => Throw Semantic Error!
-        if(data.getMethods().containsKey(method_name) && data.getName() != null){
-            List<String> childArgs = new ArrayList<String>();
-            List<String> parentArgs = new ArrayList<String>();
-            childArgs = data.getMethods().get(method_name).getArgs();
-            parentArgs = data.getMethods().get(data.getName()).getArgs();
-            if(childArgs.equals(parentArgs) == false)
-                throw new SemanticError();
-
-        }
-
-        // If the method has arguments accept will return a string with the arguments in a way like this:
-        // (type id, type id, ...)
-        if(n.f4.present()) {
-            List<String> list = new ArrayList<String>();
+        if(n.f4.present())
             parameters = Arrays.asList(n.f4.accept(this, null).split(","));
-            // Take only the name of the variable and store it to a list to check
-            // for redeclaration.
-            for( int i = 0; i < parameters.size(); i++){
-                list.add(Arrays.asList(parameters.get(i).split(" ")).get(1));
-                for(String var1: list)
-                    for(String var2: list)
-                        if(var1.equals(var2))
-                            throw new SemanticError();
-            }
-        }
 
         // Make a VarInfo class to store the info you get,
         // and then pass the varInfo into the Data. 
@@ -321,7 +265,7 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     * f2 -> "]"
     */
     public String visit(BooleanArrayType n, Data data) throws Exception {
-        return "boolean []";
+        return "boolean[]";
     }
 
     /** IntegerArrayType
@@ -330,7 +274,7 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     * f2 -> "]"
     */
     public String visit(IntegerArrayType n, Data data) throws Exception {
-        return "int []";
+        return "int[]";
     }
 
     /**
