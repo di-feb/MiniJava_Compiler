@@ -277,14 +277,14 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         return "int[]";
     }
 
-    /**
+    /** BooleanType
     * f0 -> "boolean"
     */
     public String visit(BooleanType n, Data data) throws Exception {
         return "boolean";
     }
 
-    /**
+    /** IntegerType
     * f0 -> "int"
     */
     public String visit(IntegerType n, Data data) throws Exception {
