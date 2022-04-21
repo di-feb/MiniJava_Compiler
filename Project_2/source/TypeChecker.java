@@ -36,7 +36,30 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
         }
     }
 
-    private void CheckForDeclaration(String var){
+    private void CheckForDeclaration(String value, int mode){
+        Boolean varFlag = false;
+        Boolean methodFlag = false;
+        if(mode == 0){
+            varFlag = CheckForVarDeclaration(value);
+            if(!varFlag)
+                throw new SemanticError();
+        }
+        else if(mode == 1){
+            methodFlag = CheckForMethodDeclaration(value);
+            if(!methodFlag)
+                throw new SemanticError();
+        }
+        else{
+            varFlag = CheckForVarDeclaration(value);
+            methodFlag = CheckForMethodDeclaration(value);
+            if(!varFlag && !methodFlag)
+                throw new SemanticError();
+        }
+
+        
+    }
+
+    private boolean CheckForVarDeclaration(String var){
         Data data = symbol_table.get(className);
         boolean flag = false;
         for (String varname: data.getVars().keySet())
@@ -44,10 +67,19 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
                 flag = true; 
                 break;
             }
-        if(!flag)
-            throw new SemanticError();
+        return flag;
     }
     
+    private boolean CheckForMethodDeclaration(String method){
+        Data data = symbol_table.get(className);
+        boolean flag = false;
+        for (String methodname: data.getMethods().keySet())
+            if (methodname.equals(method)){
+                flag = true; 
+                break;
+            }
+        return flag;
+    }
 
     /** Goal
     * f0 -> MainClass()
@@ -262,7 +294,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
         // Check if the var(f0) has been declared.
         // If not => Throw Semantic Error!
         string var = n.f0.accept(this);
-        CheckForDeclaration(var);
+        CheckForDeclaration(var, 0);
         
         String idType = data.get(var).getType();
         
@@ -287,8 +319,8 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
 
     */
     public String visit(ArrayAssignmentStatement n) throws Exception {
-        string var = n.f0.accept(this);
-        CheckForDeclaration(var);
+        string id = n.f0.accept(this);
+        CheckForDeclaration(id, 2);
         
         String idType = data.get(var).getType();
 
@@ -299,7 +331,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
 
         // Check if the time of the expression match the type of the identifier.
         // If not => Throw Semantic Error!
-        if(!n.f2.accept(this).getClass().getName().eguals(idType))
+        if(!n.f5.accept(this).getClass().getName().eguals(idType))
             throw new SemanticError();
         
         return null;
@@ -323,7 +355,12 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     }
     */
     public String visit(IfStatement n) throws Exception {
-        
+        // Check if the time of the expression is boolean.
+        // If not => Throw Semantic Error!
+        if(!n.f2.accept(this).getClass().getName().eguals("boolean"))
+            throw new SemanticError();
+        n.f4.accept(this);
+        n.f6.accept(this);
         
         return null;
     }
@@ -340,9 +377,390 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     }
     */
     public String visit(WhileStatement n) throws Exception {
-        
+        // Check if the time of the expression is boolean.
+        // If not => Throw Semantic Error!
+        if(!n.f2.accept(this).getClass().getName().eguals("boolean"))
+            throw new SemanticError();
+        n.f4.accept(this);
         return null;
     }
 
 
-}
+    /** PrintStatement 
+    * f0 -> "System.out.println"
+    * f1 -> "("
+    * f2 -> Expression()
+    * f3 -> ")"
+    * f4 -> ";"
+    */
+   public String visit(PrintStatement n) throws Exception {
+        // We need to check if type of the expression f2 is different from (int, boolean).
+        // if it is => Throw Semantic Error!
+        String expType = n.f2.accept(this);
+        if(!expType.getClass().getName().eguals("int") && !expType.getClass().getName().eguals("boolean"))
+            throw new SemanticError();
+        return null;
+ }
+
+    /** Expression
+     * f0 -> AndExpression()
+    *       | CompareExpression()
+    *       | PlusExpression()
+    *       | MinusExpression()
+    *       | TimesExpression()
+    *       | ArrayLookup()
+    *       | ArrayLength()
+    *       | MessageSend()
+    *       | Clause()
+    */
+    public String visit(Expression n) throws Exception {
+        return n.f0.accept(this);
+    }
+
+    /** AndExpression   
+    * f0 -> Clause()
+    * f1 -> "&&"
+    * f2 -> Clause()
+    */
+    public R visit(AndExpression n) throws Exception {
+        String clause1 = n.f0.accept(this);
+        if(!clause1.getClass().getName().eguals("int") && !expType.getClass().getName().eguals("boolean"))
+            throw new SemanticError();
+        String clause2 = n.f2.accept(this);
+        if(!clause2.getClass().getName().eguals("int") && !expType.getClass().getName().eguals("boolean"))
+            throw new SemanticError();
+
+        return "boolean";
+    }
+
+    /** CompareExpression
+     * f0 -> PrimaryExpression()
+    * f1 -> "<"
+    * f2 -> PrimaryExpression()
+    */
+    public String visit(CompareExpression n) throws Exception {
+        String exp1 = n.f0.accept(this);
+        if(!exp1.getClass().getName().eguals("int"))
+            throw new SemanticError();
+        
+        String exp2 = n.f2.accept(this);
+        if(!exp2.getClass().getName().eguals("int"))
+            throw new SemanticError();
+        return "boolean";
+    }
+
+    /** PlusExpression
+    * f0 -> PrimaryExpression()
+    * f1 -> "+"
+    * f2 -> PrimaryExpression()
+
+    f0 + f2
+    */
+    public String visit(PlusExpression n) throws Exception {
+        String exp1 = n.f0.accept(this);
+        if(!exp1.getClass().getName().eguals("int"))
+            throw new SemanticError();
+        
+        String exp2 = n.f2.accept(this);
+        if(!exp2.getClass().getName().eguals("int"))
+            throw new SemanticError();
+        return "int";
+    }
+
+    /**
+     * f0 -> PrimaryExpression()
+    * f1 -> "-"
+    * f2 -> PrimaryExpression()
+
+    f0 - f2
+    */
+    public String visit(MinusExpression n, A argu) throws Exception {
+        String exp1 = n.f0.accept(this);
+        if(!exp1.getClass().getName().eguals("int"))
+            throw new SemanticError();
+        
+        String exp2 = n.f2.accept(this);
+        if(!exp2.getClass().getName().eguals("int"))
+            throw new SemanticError();
+        return "int";    
+    }
+
+    /**
+     * f0 -> PrimaryExpression()
+    * f1 -> "*"
+    * f2 -> PrimaryExpression()
+
+    f0 * f2
+    */
+    public String visit(TimesExpression n, A argu) throws Exception {
+        String exp1 = n.f0.accept(this);
+        if(!exp1.getClass().getName().eguals("int"))
+            throw new SemanticError();
+        
+        String exp2 = n.f2.accept(this);
+        if(!exp2.getClass().getName().eguals("int"))
+            throw new SemanticError();
+        return "int"; 
+    }
+
+    /** ArrayLookup
+    * f0 -> PrimaryExpression()
+    * f1 -> "["
+    * f2 -> PrimaryExpression()
+    * f3 -> "]"
+
+    f0[f2]
+    */
+    public String visit(ArrayLookup n) throws Exception {
+        // Check if the var has been declared.
+        String var = n.f0.accept(this);
+        CheckForDeclaration(var, 2);
+
+        // Check if the type of var is arrayType.
+        if(!var.getClass().getName().eguals("int[]") && !var.getClass().getName().eguals("boolean[]"))
+            throw new SemanticError();
+
+        // The exp2 must be an integer.
+        String exp2 = n.f2.accept(this);
+        if(!exp2.getClass().getName().eguals("int"))
+            throw new SemanticError();
+        return "int";
+    }
+
+    /** ArrayLength
+     * f0 -> PrimaryExpression()
+    * f1 -> "."
+    * f2 -> "length"
+
+    f0.length
+    */
+    public String visit(ArrayLength n) throws Exception {
+        // Check if the var or method has been declared.
+        String var = n.f0.accept(this);
+        CheckForDeclaration(var, 2);
+
+        // Check if the type of var is arrayType.
+        if(!var.getClass().getName().eguals("int[]") && !var.getClass().getName().eguals("boolean[]"))
+            throw new SemanticError();    
+        return "int";
+    }
+
+    /** MessageSend
+    * f0 -> PrimaryExpression()
+    * f1 -> "."
+    * f2 -> Identifier()
+    * f3 -> "("
+    * f4 -> ( ExpressionList() )?
+    * f5 -> ")"
+
+    f0.f2(f4)
+    */
+    public String visit(MessageSend n) throws Exception {
+        // Check if the var or method has been declared.
+        String var = n.f0.accept(this);
+        CheckForDeclaration(var, 0);
+
+        // Check if the method or method has been declared.
+        String method = n.f2.accept(this);
+        CheckForDeclaration(method, 0);
+
+        // Check if the argument types are correct.
+        Data data = symbol_table.get(className);
+
+        List<String> info = new ArrayList<String>();
+        List<String> info = data.getMethods().get(method).getArgs();
+
+        if(n.f4.accept(this).present() == false && info.size() != 0)
+            throw new SemanticError(); 
+        if(n.f4.accept(this).present()){
+            List<String> list = new ArrayList<String>();
+            list = Arrays.asList(n.f4.accept(this).split(","));
+
+            // Check if the arguments have been declared
+            for( int i = 0; i < list.size(); i++){
+                String arg = list.get(i);
+                CheckForDeclaration(arg, 2);
+            }
+            // Hold the types of the method's argument for matching checking.
+            List<String> types = new ArrayList<String>();   
+            for( int i = 0; i < info.size(); i++)
+                types.add(Arrays.asList(info.get(i).split(" ")).get(0));
+
+            // Check if the argument type are the same as they declared later.
+            for( int i = 0; i < list.size(); i++)
+                if(!list.get(i).getClass().getName().eguals(types.get(i)))
+                    throw new SemanticError(); 
+        } 
+    }
+
+    /** ExpressionList
+    * f0 -> Expression()
+    * f1 -> ExpressionTail()
+    */
+    public String visit(ExpressionList n) throws Exception {
+        String expression = n.f0.accept(this);   
+        String expression_tail = n.f1.accept(this);   
+        return expression + expression_tail;
+    }
+
+
+    /** ExpressionTail
+     * f0 -> ( ExpressionTerm() )*
+    */
+    public String visit(ExpressionTail n) throws Exception {
+        String expression_tail = "";
+        for( int i = 0; i < n.f0.size(); i++ )
+        expression_tail += n.f0.elementAt(i).accept(this);
+        return expression_tail;
+    }
+
+    /** ExpressionTerm
+     * f0 -> ","
+    * f1 -> Expression()
+    */
+    public String visit(ExpressionTerm n) throws Exception {
+        String expression = n.f1.accept(this);
+        return ", " + expression;
+    }
+
+    /** Clause n
+     * f0 -> NotExpression()
+    *       | PrimaryExpression()
+    */
+    public String visit(Clause n) throws Exception {
+        return n.f0.accept(this);
+    }
+
+    /** PrimaryExpression
+     * f0 -> IntegerLiteral()
+    *       | TrueLiteral()
+    *       | FalseLiteral()
+    *       | Identifier()
+    *       | ThisExpression()
+    *       | ArrayAllocationExpression()
+    *       | AllocationExpression()
+    *       | BracketExpression()
+    */
+    public String visit(PrimaryExpression n) throws Exception {
+        return n.f0.accept(this);
+    }
+
+    /**
+     * f0 -> <INTEGER_LITERAL>
+    */
+    public String visit(IntegerLiteral n) throws Exception {
+        return "int";
+    }
+
+    /**
+     * f0 -> "true"
+    */
+    public String visit(TrueLiteral n) throws Exception {
+        return "boolean";
+    }
+
+    /**
+     * f0 -> "false"
+    */
+    public String visit(FalseLiteral n) throws Exception {
+        return "boolean";
+    }
+
+    /**
+     * f0 -> <IDENTIFIER>
+    */
+    public String visit(Identifier n) throws Exception {
+        return n.f0.accept(this, argu);
+    }
+
+    /**
+     * f0 -> "this"
+    */
+    public R visit(ThisExpression n, A argu) throws Exception {
+        return n.f0.accept(this, argu);
+    }
+
+    /**
+     * f0 -> BooleanArrayAllocationExpression()
+    *       | IntegerArrayAllocationExpression()
+    */
+    public R visit(ArrayAllocationExpression n, A argu) throws Exception {
+        return n.f0.accept(this, argu);
+    }
+
+    /**
+     * f0 -> "new"
+    * f1 -> "boolean"
+    * f2 -> "["
+    * f3 -> Expression()
+    * f4 -> "]"
+    */
+    public R visit(BooleanArrayAllocationExpression n, A argu) throws Exception {
+        R _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        n.f3.accept(this, argu);
+        n.f4.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> "new"
+    * f1 -> "int"
+    * f2 -> "["
+    * f3 -> Expression()
+    * f4 -> "]"
+    */
+    public R visit(IntegerArrayAllocationExpression n, A argu) throws Exception {
+        R _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        n.f3.accept(this, argu);
+        n.f4.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> "new"
+    * f1 -> Identifier()
+    * f2 -> "("
+    * f3 -> ")"
+    */
+    public R visit(AllocationExpression n, A argu) throws Exception {
+        R _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        n.f3.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> "!"
+    * f1 -> Clause()
+    */
+    public R visit(NotExpression n, A argu) throws Exception {
+        R _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> "("
+    * f1 -> Expression()
+    * f2 -> ")"
+    */
+    public R visit(BracketExpression n, A argu) throws Exception {
+        R _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        return _ret;
+    }
+
+
+
+    }
