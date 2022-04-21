@@ -85,6 +85,12 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         // Keep the name of the class
         String name = n.f1.accept(this, null);
 
+        // Check if the name of the class already existed inside the symbol table.
+        // If it does that means we have redeclare a class.
+        // We do not want that => Throw Semantic Error! 
+        if(symbol_table.containsKey(name))
+            throw new SemanticError();
+
         // Allocate memory for a Data Object to fill it up with the info
         // provided by VarDecls and Methods.
         Data class_data = new Data(null);
@@ -119,6 +125,12 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         // Keep the name of the parent class
         String parent_name = n.f3.accept(this, null);
 
+        // Check if the name of the class already existed inside the symbol table.
+        // If it does that means we have redeclare a class.
+        // We do not want that => Throw Semantic Error! 
+        if(symbol_table.containsKey(name))
+            throw new SemanticError();
+
         // Allocate memory for a Data Object to fill it up with the info
         // provided by VarDecls and Methods.
         // Every child class has all the methods and vars of the parent class too.
@@ -151,6 +163,12 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         String var_type = n.f0.accept(this, null);
         String var_name = n.f1.accept(this, null);
 
+        // If var_name already existed inside data.getVars map it means,
+        // we had a redeclaration of that variable inside the same class.
+        // We do not want that => Throw Semantic Error!
+        if(data.getVars().containsKey(var_name))
+            throw new SemanticError();
+
         // Make a VarInfo class to store the info you get,
         // and then pass the varInfo into the Data. 
         VarInfo vars_value = new VarInfo();
@@ -181,8 +199,23 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         String method_name = n.f2.accept(this, null); 
         List<String> parameters = new ArrayList<String>();
 
-        if(n.f4.present())
+        // If the method has arguments accept will return a string with the arguments in a way like this:
+        // (type id, type id, ...)
+        if(n.f4.present()) {
+            List<String> list = new ArrayList<String>();
             parameters = Arrays.asList(n.f4.accept(this, null).split(","));
+            // Take only the name of the variable and store it to a list to check
+            // for redeclaration.
+            // If we have declare a parameter into a method more than one time 
+            // (same name) =>throw parse error!!! 
+            for( int i = 0; i < parameters.size(); i++){
+                list.add(Arrays.asList(parameters.get(i).split(" ")).get(1));
+                for(String var1: list)
+                    for(String var2: list)
+                        if(var1.equals(var2))
+                            throw new SemanticError();
+            }
+        }
 
         // Make a VarInfo class to store the info you get,
         // and then pass the varInfo into the Data. 
