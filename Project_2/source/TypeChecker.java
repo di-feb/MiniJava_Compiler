@@ -6,13 +6,48 @@ import java.util.LinkedHashMap;
 import visitor.GJDepthFirst;
 import syntaxtree.*;
 
-public class DeclCollector extends GJDepthFirst< String, Data >{
-    String className;
-    private Map <String, Data> symbol_table;
+public class TypeChecker extends GJDepthFirst< String, Data >{
+    String className;                           // The className of the class we are into at a specific moment
+    ArrayList <String> typesInScope;            // A list that holds every type that has been declared primitive and non primitive
+    private Map <String, Data> symbol_table;    // The symbol table we construct later with the DeclCollector
 
-    public DeclCollector(){
+    public TypeChecker(){
         this.symbol_table = new LinkedHashMap < String, Data >();
+        this.types = new ArrayList<String>();
+        this.varAtScope = new ArrayList<String>();
+        this.methodsAtScope = new ArrayList<String>();
     }
+
+    boolean isPrimitive(String type){
+        if(type != "int[]" && type != "boolean[]" && type != "boolean" && type != "int")
+            return false;
+        return true;
+    }
+
+    // Find all non primitive types and store them into an referenceTypes ArrayList.
+    private void UpdateTypesInScope(){
+        typesInScope.clear();
+        Data data = symbol_table.get(className);
+        for (String varname: data.getVars().keySet()){
+            VarInfo varinfo = data.get(varname);
+            String type = varinfo.getType();
+            if( !typesInScope.contains(type))
+                typesInScope.add(type);
+        }
+    }
+
+    private void CheckForDeclaration(String var){
+        Data data = symbol_table.get(className);
+        boolean flag = false;
+        for (String varname: data.getVars().keySet())
+            if (varname.equals(var)){
+                flag = true; 
+                break;
+            }
+        if(!flag)
+            throw new SemanticError();
+    }
+    
 
     /** Goal
     * f0 -> MainClass()
@@ -27,6 +62,7 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         for( int i = 0; i < n.f1.size(); i++ )
             n.f1.elementAt(i).accept(this);
 
+        typesInScope.clear();
         return null; 
     }
 
@@ -45,7 +81,8 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     */
     public String visit(MainClass n) throws Exception {
         // Keep the name of the "main" class
-        String name = n.f1.accept(this, null);
+        className = n.f1.accept(this, null);
+        UpdateTypesInScope();
 
         // Go down through the parse Tree
         for( int i = 0; i < n.f14.size(); i++ )
@@ -54,6 +91,7 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         for( int i = 0; i < n.f15.size(); i++ )
             n.f15.elementAt(i).accept(this);
 
+        typesInScope.clear();
         return null;
     }
 
@@ -78,13 +116,8 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     */
     public String visit(ClassDeclaration n) throws Exception {
         // Keep the name of the "main" class
-        String name = n.f1.accept(this);
-
-        // Check if the name of the class already existed inside the symbol table.
-        // If it does that means we have redeclare a class.
-        // We do not want that => Throw Semantic Error! 
-        if(symbol_table.containsKey(name))
-            throw new SemanticError();
+        className = n.f1.accept(this);
+        UpdateTypesInScope();
 
         // Go down through the parse Tree
         for( int i = 0; i < n.f3.size(); i++ )
@@ -92,7 +125,8 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
 
         for( int i = 0; i < n.f4.size(); i++ )
             n.f4.elementAt(i).accept(this);
-
+        
+        typesInScope.clear();
         return null;
     }
 
@@ -110,13 +144,8 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     */
     public String visit(ClassExtendsDeclaration n) throws Exception {
         // Keep the name of the class
-        String name = n.f1.accept(this);
-
-        // Check if the name of the class already existed inside the symbol table.
-        // If it does that means we have redeclare a class.
-        // We do not want that => Throw Semantic Error! 
-        if(symbol_table.containsKey(name))
-            throw new SemanticError();
+        className = n.f1.accept(this);
+        UpdateTypesInScope();
 
         // Check if the name of the parent class not existed inside the symbol table.
         // If it does not that means we have declare a class whose parent class has not been declared yet.
@@ -132,6 +161,7 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
         for( int i = 0; i < n.f6.size(); i++ )
             n.f6.elementAt(i).accept(this);
 
+        typesInScope.clear();
         return null;
     }
 
@@ -141,19 +171,13 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     * f2 -> ";"
     */
     public String visit(VarDeclaration n) throws Exception {
-        // Keep the name and the type off the var.
+        // Keep  the type off the var and go down into the parse tree.
         String var_type = n.f0.accept(this, null);
-        String var_name = n.f1.accept(this, null);
+        n.f1.accept(this, null);
 
-        // We need to check if type is different from (int, boolean, int[], boolean[])
+        // We need to check if type is different from (int, boolean, int[], boolean[]) or the other non-primitive types.
         // if it is => Throw Semantic Error!
-        if(var_type != "int[]" && var_type != "boolean[]" && var_type != "boolean" && var_type != "int")
-            throw new SemanticError();
-
-        // If var_name already existed inside data.getVars map it means,
-        // we had a redeclaration of that variable inside the same class.
-        // We do not want that => Throw Semantic Error!
-        if(symbol_table.get(className).getVars().containsKey(var_name))
+        if(!typesInScope.contains(var_type) && !isPrimitive(var_type))
             throw new SemanticError();
 
         return null;
@@ -176,146 +200,149 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
     public String visit(MethodDeclaration n) throws Exception {
         String ret_type = n.f1.accept(this, null);   
         String method_name = n.f2.accept(this, null); 
-        List<String> parameters = new ArrayList<String>();
 
-        // We need to check if type is different from (int, boolean, int[], boolean[])
+        // We need to check if type is different from (int, boolean, int[], boolean[]) or the other non-primitive types.
         // if it is => Throw Semantic Error!
-        if(ret_type != "int[]" && ret_type != "boolean[]" && ret_type != "boolean" && ret_type != "int")
+        if(!types.contains(ret_type)  && !isPrimitive(ret_type))
             throw new SemanticError();
 
-        // If method_name already existed inside data.getMethods map 
-        // and it is not part of a sub class it means, 
-        // we had a redeclaration of that method inside the same class.
-        // We do not want that => Throw Semantic Error!
-        if(data.symbol_table.get(className).getMethods().containsKey(method_name) && data.getName() == null)
-            throw new SemanticError();
-
-        // If method_name already existed inside data.getMethods map 
-        // but it is part of a sub class, we need to make sure that 
-        // the args of the two methods are the same.
-        // If not => Throw Semantic Error!
-        List<String> childArgs = new ArrayList<String>();
-        if(symbol_table.get(className).getMethods().containsKey(method_name) && data.getName() != null){
-            List<String> parentArgs = new ArrayList<String>();
-            childArgs = data.getMethods().get(method_name).getArgs();
-            parentArgs = data.getMethods().get(data.getName()).getArgs();
-            if(childArgs.equals(parentArgs) == false)
-                throw new SemanticError();
-        }
-
-        // If the method has arguments accept will return a string with the arguments in a way like this:
-        // (type id, type id, ...)
-        if(n.f4.present()) {
-            List<String> list = new ArrayList<String>();
-            parameters = Arrays.asList(n.f4.accept(this, null).split(","));
-            // Take only the name of the variable and store it to a list to check
-            // for redeclaration.
-            // If we have declare a parameter into a method more than one time 
-            // (same name) =>throw parse error!!! 
-            for( int i = 0; i < parameters.size(); i++){
-                list.add(Arrays.asList(parameters.get(i).split(" ")).get(1));
-                for(String var1: list)
-                    for(String var2: list)
-                        if(var1.equals(var2))
-                            throw new SemanticError();
-            }
-        }
+            
+        if(n.f4.present())
+            n.f4.accept(this);
 
         // Accept to go through the parse tree 
         for( int i = 0; i < n.f7.size(); i++ )
-            n.f7.elementAt(i).accept(this, data);
+            n.f7.elementAt(i).accept(this);
+        for( int i = 0; i < n.f8.size(); i++ )
+            n.f8.elementAt(i).accept(this);
+        
+        // The return type of the return statement need to match with the return type of this method.
+        // If it does not => Throw Semantic Error!
+        if(!n.f10.accept(this).getClass().getName().eguals(ret_type))
+            throw new SemanticError();
 
         return null;
     }
 
-
-    /** FormalParameterList
-    * f0 -> FormalParameter()
-    * f1 -> FormalParameterTail()
+    /** Statement
+    * f0 -> Block()
+    *       | AssignmentStatement()
+    *       | ArrayAssignmentStatement()
+    *       | IfStatement()
+    *       | WhileStatement()
+    *       | PrintStatement()
     */
-    // It will go and fill up recursivly the args field of the method_info field of the Data class
-    public String visit(FormalParameterList n, Data data) throws Exception {
-        String parameter = n.f0.accept(this, null);   
-        String parameter_tail = n.f1.accept(this, null);   
-        return parameter + parameter_tail;
+    public String visit(Statement n) throws Exception {
+        return n.f0.accept(this);
     }
 
-    /** FormalParameter
-    * f0 -> Type()
-    * f1 -> Identifier()
-    */
-    public String visit(FormalParameter n, Data data) throws Exception {
-        String type = n.f0.accept(this, null);   
-        String name = n.f1.accept(this, null);
-        return type + " " + name;
-    }
+    /** Block
+    * f0 -> "{"
+    * f1 -> ( Statement() )*
+    * f2 -> "}"
 
-    /** FormalParameterTail
-    * f0 -> ( FormalParameterTerm() )*
+    { f1 }
     */
-    public String visit(FormalParameterTail n, Data data) throws Exception {
-        String parameter_tail = "";
+    public String visit(Block n) throws Exception {
         for( int i = 0; i < n.f0.size(); i++ )
-            parameter_tail += n.f0.elementAt(i).accept(this, null);
-        return parameter_tail;
+            n.f0.elementAt(i).accept(this);
+        return null;
     }
 
-    /** FormalParameterTerm
-    * f0 -> ","
-    * f1 -> FormalParameter()
+    /** AssignmentStatement
+    * f0 -> Identifier()
+    * f1 -> "="
+    * f2 -> Expression()
+    * f3 -> ";"
+    
+    f0 = f2;
+    
     */
-    public String visit(FormalParameterTerm n, Data data) throws Exception {   
-        String parameter = n.f1.accept(this, null);
-        return ", " + parameter;
+    public String visit(AssignmentStatement n) throws Exception {
+        // Check if the var(f0) has been declared.
+        // If not => Throw Semantic Error!
+        string var = n.f0.accept(this);
+        CheckForDeclaration(var);
+        
+        String idType = data.get(var).getType();
+        
+        // Check if the time of the expression match the type of the identifier.
+        // If not => Throw Semantic Error!
+        if(!n.f2.accept(this).getClass().getName().eguals(idType))
+            throw new SemanticError();
+        
+        return null;
     }
 
-    /** Type
-    * f0 -> ArrayType()
-    *       | BooleanType()
-    *       | IntegerType()
-    *       | Identifier()
-    */
-    public String visit(Type n, Data data) throws Exception {
-        return n.f0.accept(this, null);
-    }
-
-    /** ArrayType
-    * f0 -> BooleanArrayType()
-    *       | IntegerArrayType()
-    */
-    public String visit(ArrayType n, Data data) throws Exception {
-        return n.f0.accept(this, null);
-    }
-
-    /** BooleanArrayType 
-    * f0 -> "boolean"
+    /** ArrayAssignmentStatement
+    * f0 -> Identifier()
     * f1 -> "["
-    * f2 -> "]"
+    * f2 -> Expression()
+    * f3 -> "]"
+    * f4 -> "="
+    * f5 -> Expression()
+    * f6 -> ";"
+
+    f0[f2]=f5;
+
     */
-    public String visit(BooleanArrayType n, Data data) throws Exception {
-        return "boolean[]";
+    public String visit(ArrayAssignmentStatement n) throws Exception {
+        string var = n.f0.accept(this);
+        CheckForDeclaration(var);
+        
+        String idType = data.get(var).getType();
+
+        // Check if the time of the expression f2 is interger.
+        // If not => Throw Semantic Error!
+        if(!n.f2.accept(this).getClass().getName().eguals("int"))
+            throw new SemanticError();
+
+        // Check if the time of the expression match the type of the identifier.
+        // If not => Throw Semantic Error!
+        if(!n.f2.accept(this).getClass().getName().eguals(idType))
+            throw new SemanticError();
+        
+        return null;
+
     }
 
-    /** IntegerArrayType
-    * f0 -> "int"
-    * f1 -> "["
-    * f2 -> "]"
+    /** IfStatement
+     * f0 -> "if"
+    * f1 -> "("
+    * f2 -> Expression()
+    * f3 -> ")"
+    * f4 -> Statement()
+    * f5 -> "else"
+    * f6 -> Statement()
+
+    if (f2){
+        f4
+    }
+    else{
+        f6
+    }
     */
-    public String visit(IntegerArrayType n, Data data) throws Exception {
-        return "int[]";
+    public String visit(IfStatement n) throws Exception {
+        
+        
+        return null;
     }
 
-    /**
-    * f0 -> "boolean"
+    /** WhileStatement
+     * f0 -> "while"
+    * f1 -> "("
+    * f2 -> Expression()
+    * f3 -> ")"
+    * f4 -> Statement()
+
+    while(f2){
+        f4
+    }
     */
-    public String visit(BooleanType n, Data data) throws Exception {
-        return "boolean";
+    public String visit(WhileStatement n) throws Exception {
+        
+        return null;
     }
 
-    /**
-    * f0 -> "int"
-    */
-    public String visit(IntegerType n, Data data) throws Exception {
-        return "int";
-    }
+
 }
