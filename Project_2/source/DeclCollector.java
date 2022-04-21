@@ -208,13 +208,14 @@ public class DeclCollector extends GJDepthFirst< String, Data >{
             // for redeclaration.
             // If we have declare a parameter into a method more than one time 
             // (same name) =>throw parse error!!! 
-            for( int i = 0; i < parameters.size(); i++){
+            for( int i = 0; i < parameters.size(); i++)
                 list.add(Arrays.asList(parameters.get(i).split(" ")).get(1));
-                for(String var1: list)
-                    for(String var2: list)
-                        if(var1.equals(var2))
-                            throw new SemanticError();
-            }
+
+            for(String var1: list)
+                for(String var2: list)
+                    if(var1.equals(var2))
+                        throw new SemanticError();
+            
         }
 
         // Make a VarInfo class to store the info you get,
