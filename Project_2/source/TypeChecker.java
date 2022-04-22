@@ -764,7 +764,4 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     public String visit(BracketExpression n) throws Exception {
         return n.f1.accept(this);
     }
-
-
-
-    }
+}
