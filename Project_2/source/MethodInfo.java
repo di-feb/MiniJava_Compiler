@@ -5,8 +5,8 @@ import visitor.GJDepthFirst;
 import syntaxtree.*;
 
 public class MethodInfo {
-    private String returnType;            // Return type of the method
-    private Integer offset;               // Offset of the method
+    private String returnType;           // Return type of the method
+    private Integer offset;              // Offset of the method
     private List < String > parameters;  // Args of the method
 
     // Constructor

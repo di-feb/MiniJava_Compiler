@@ -1,6 +1,9 @@
 import syntaxtree.*;
 import visitor.*;
 import java.io.*;
+import java.lang.ProcessBuilder.Redirect.Type;
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -18,8 +21,14 @@ public class Main {
 
             System.err.println("Program parsed successfully.");
 
-            DeclCollector eval = new DeclCollector();
-            root.accept(eval, null);
+            // First iteration of the parse tree in order to build the symbol_table
+            DeclCollector collector = new DeclCollector();
+            root.accept(collector, null);
+
+            // Second iteration of the parse tree in order to do type checking
+            // with the help of the symbol table we built at the first iteration.
+            TypeChecker checker = new TypeChecker(collector.getSymbolTable());
+            root.accept(checker);
         }
         catch(ParseException ex){
             System.out.println(ex.getMessage());

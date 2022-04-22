@@ -1,21 +1,21 @@
 import java.util.Map;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.LinkedHashMap; 
-import visitor.GJDepthFirst;
+import java.util.Arrays;
+import java.util.ArrayList;
+import visitor.GJNoArguDepthFirst;
 import syntaxtree.*;
 
-public class TypeChecker extends GJDepthFirst< String, Data >{
-    String className;                           // The className of the class we are into at a specific moment
-    ArrayList <String> typesInScope;            // A list that holds every type that has been declared primitive and non primitive
+public class TypeChecker extends GJNoArguDepthFirst< String >{
+    private String className;                   // The className of the class we are into at a specific moment
+    private ArrayList <String> typesInScope;    // A list that holds every type that has been declared primitive and non primitive
     private Map <String, Data> symbol_table;    // The symbol table we construct later with the DeclCollector
 
-    public TypeChecker(){
-        this.symbol_table = new LinkedHashMap < String, Data >();
-        this.types = new ArrayList<String>();
-        this.varAtScope = new ArrayList<String>();
-        this.methodsAtScope = new ArrayList<String>();
+    // Constructor
+    TypeChecker(Map <String, Data> symbol_table){
+        this.symbol_table = symbol_table;
+        this.typesInScope = new ArrayList<String>();
+        this.className = null;
     }
 
     boolean isPrimitive(String type){
@@ -27,16 +27,17 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     // Find all non primitive types and store them into an referenceTypes ArrayList.
     private void UpdateTypesInScope(){
         typesInScope.clear();
-        Data data = symbol_table.get(className);
-        for (String varname: data.getVars().keySet()){
-            VarInfo varinfo = data.get(varname);
+        Data data = new Data(className);
+        data = symbol_table.get(className);
+        for (String varname : (data.getVars()).keySet()){
+            VarInfo varinfo = data.getVars().get(varname);
             String type = varinfo.getType();
             if( !typesInScope.contains(type))
                 typesInScope.add(type);
         }
     }
 
-    private void CheckForDeclaration(String value, int mode){
+    private void CheckForDeclaration(String value, int mode)throws Exception {
         Boolean varFlag = false;
         Boolean methodFlag = false;
         if(mode == 0){
@@ -113,7 +114,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     */
     public String visit(MainClass n) throws Exception {
         // Keep the name of the "main" class
-        className = n.f1.accept(this, null);
+        className = n.f1.accept(this);
         UpdateTypesInScope();
 
         // Go down through the parse Tree
@@ -204,8 +205,8 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     */
     public String visit(VarDeclaration n) throws Exception {
         // Keep  the type off the var and go down into the parse tree.
-        String var_type = n.f0.accept(this, null);
-        n.f1.accept(this, null);
+        String var_type = n.f0.accept(this);
+        n.f1.accept(this);
 
         // We need to check if type is different from (int, boolean, int[], boolean[]) or the other non-primitive types.
         // if it is => Throw Semantic Error!
@@ -230,12 +231,12 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
         }
     */
     public String visit(MethodDeclaration n) throws Exception {
-        String ret_type = n.f1.accept(this, null);   
-        String method_name = n.f2.accept(this, null); 
+        String ret_type = n.f1.accept(this);   
+        String method_name = n.f2.accept(this); 
 
         // We need to check if type is different from (int, boolean, int[], boolean[]) or the other non-primitive types.
         // if it is => Throw Semantic Error!
-        if(!types.contains(ret_type)  && !isPrimitive(ret_type))
+        if(!typesInScope.contains(ret_type)  && !isPrimitive(ret_type))
             throw new SemanticError();
 
             
@@ -250,7 +251,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
         
         // The return type of the return statement need to match with the return type of this method.
         // If it does not => Throw Semantic Error!
-        if(!n.f10.accept(this).getClass().getName().eguals(ret_type))
+        if(!(n.f10.accept(this).getClass().getName().toString()).equals(ret_type))
             throw new SemanticError();
 
         return null;
@@ -276,8 +277,8 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     { f1 }
     */
     public String visit(Block n) throws Exception {
-        for( int i = 0; i < n.f0.size(); i++ )
-            n.f0.elementAt(i).accept(this);
+        for( int i = 0; i < n.f1.size(); i++ )
+            n.f1.elementAt(i).accept(this);
         return null;
     }
 
@@ -293,14 +294,14 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     public String visit(AssignmentStatement n) throws Exception {
         // Check if the var(f0) has been declared.
         // If not => Throw Semantic Error!
-        string var = n.f0.accept(this);
+        String var = n.f0.accept(this);
         CheckForDeclaration(var, 0);
         
-        String idType = data.get(var).getType();
+        String idType = symbol_table.get(className).getVars().get(var).getType();
         
         // Check if the time of the expression match the type of the identifier.
         // If not => Throw Semantic Error!
-        if(!n.f2.accept(this).getClass().getName().eguals(idType))
+        if(!(n.f2.accept(this).getClass().getName()).equals(idType))
             throw new SemanticError();
         
         return null;
@@ -319,19 +320,19 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
 
     */
     public String visit(ArrayAssignmentStatement n) throws Exception {
-        string id = n.f0.accept(this);
+        String id = n.f0.accept(this);
         CheckForDeclaration(id, 2);
         
-        String idType = data.get(var).getType();
+        String idType = symbol_table.get(className).getVars().get(id).getType();
 
         // Check if the time of the expression f2 is interger.
         // If not => Throw Semantic Error!
-        if(!n.f2.accept(this).getClass().getName().eguals("int"))
+        if(!n.f2.accept(this).getClass().getName().equals("int"))
             throw new SemanticError();
 
         // Check if the time of the expression match the type of the identifier.
         // If not => Throw Semantic Error!
-        if(!n.f5.accept(this).getClass().getName().eguals(idType))
+        if(!n.f5.accept(this).getClass().getName().equals(idType))
             throw new SemanticError();
         
         return null;
@@ -357,7 +358,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     public String visit(IfStatement n) throws Exception {
         // Check if the time of the expression is boolean.
         // If not => Throw Semantic Error!
-        if(!n.f2.accept(this).getClass().getName().eguals("boolean"))
+        if(!n.f2.accept(this).getClass().getName().equals("boolean"))
             throw new SemanticError();
         n.f4.accept(this);
         n.f6.accept(this);
@@ -379,7 +380,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     public String visit(WhileStatement n) throws Exception {
         // Check if the time of the expression is boolean.
         // If not => Throw Semantic Error!
-        if(!n.f2.accept(this).getClass().getName().eguals("boolean"))
+        if(!n.f2.accept(this).getClass().getName().equals("boolean"))
             throw new SemanticError();
         n.f4.accept(this);
         return null;
@@ -397,7 +398,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
         // We need to check if type of the expression f2 is different from (int, boolean).
         // if it is => Throw Semantic Error!
         String expType = n.f2.accept(this);
-        if(!expType.getClass().getName().eguals("int") && !expType.getClass().getName().eguals("boolean"))
+        if(!expType.getClass().getName().equals("int") && !expType.getClass().getName().equals("boolean"))
             throw new SemanticError();
         return null;
  }
@@ -422,12 +423,12 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     * f1 -> "&&"
     * f2 -> Clause()
     */
-    public R visit(AndExpression n) throws Exception {
+    public String visit(AndExpression n) throws Exception {
         String clause1 = n.f0.accept(this);
-        if(!clause1.getClass().getName().eguals("int") && !expType.getClass().getName().eguals("boolean"))
+        if(!clause1.getClass().getName().equals("int") && (!clause1.getClass().getName().equals("boolean")))
             throw new SemanticError();
         String clause2 = n.f2.accept(this);
-        if(!clause2.getClass().getName().eguals("int") && !expType.getClass().getName().eguals("boolean"))
+        if(!clause2.getClass().getName().equals("int") && (!clause2.getClass().getName().equals("boolean")))
             throw new SemanticError();
 
         return "boolean";
@@ -440,11 +441,11 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     */
     public String visit(CompareExpression n) throws Exception {
         String exp1 = n.f0.accept(this);
-        if(!exp1.getClass().getName().eguals("int"))
+        if(!exp1.getClass().getName().equals("int"))
             throw new SemanticError();
         
         String exp2 = n.f2.accept(this);
-        if(!exp2.getClass().getName().eguals("int"))
+        if(!exp2.getClass().getName().equals("int"))
             throw new SemanticError();
         return "boolean";
     }
@@ -458,11 +459,11 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     */
     public String visit(PlusExpression n) throws Exception {
         String exp1 = n.f0.accept(this);
-        if(!exp1.getClass().getName().eguals("int"))
+        if(!exp1.getClass().getName().equals("int"))
             throw new SemanticError();
         
         String exp2 = n.f2.accept(this);
-        if(!exp2.getClass().getName().eguals("int"))
+        if(!exp2.getClass().getName().equals("int"))
             throw new SemanticError();
         return "int";
     }
@@ -474,13 +475,13 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
 
     f0 - f2
     */
-    public String visit(MinusExpression n, A argu) throws Exception {
+    public String visit(MinusExpression n) throws Exception {
         String exp1 = n.f0.accept(this);
-        if(!exp1.getClass().getName().eguals("int"))
+        if(!exp1.getClass().getName().equals("int"))
             throw new SemanticError();
         
         String exp2 = n.f2.accept(this);
-        if(!exp2.getClass().getName().eguals("int"))
+        if(!exp2.getClass().getName().equals("int"))
             throw new SemanticError();
         return "int";    
     }
@@ -492,13 +493,13 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
 
     f0 * f2
     */
-    public String visit(TimesExpression n, A argu) throws Exception {
+    public String visit(TimesExpression n) throws Exception {
         String exp1 = n.f0.accept(this);
-        if(!exp1.getClass().getName().eguals("int"))
+        if(!exp1.getClass().getName().equals("int"))
             throw new SemanticError();
         
         String exp2 = n.f2.accept(this);
-        if(!exp2.getClass().getName().eguals("int"))
+        if(!exp2.getClass().getName().equals("int"))
             throw new SemanticError();
         return "int"; 
     }
@@ -517,12 +518,12 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
         CheckForDeclaration(var, 2);
 
         // Check if the type of var is arrayType.
-        if(!var.getClass().getName().eguals("int[]") && !var.getClass().getName().eguals("boolean[]"))
+        if(!var.getClass().getName().equals("int[]") && !var.getClass().getName().equals("boolean[]"))
             throw new SemanticError();
 
         // The exp2 must be an integer.
         String exp2 = n.f2.accept(this);
-        if(!exp2.getClass().getName().eguals("int"))
+        if(!exp2.getClass().getName().equals("int"))
             throw new SemanticError();
         return "int";
     }
@@ -540,7 +541,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
         CheckForDeclaration(var, 2);
 
         // Check if the type of var is arrayType.
-        if(!var.getClass().getName().eguals("int[]") && !var.getClass().getName().eguals("boolean[]"))
+        if(!var.getClass().getName().equals("int[]") && !var.getClass().getName().equals("boolean[]"))
             throw new SemanticError();    
         return "int";
     }
@@ -568,11 +569,11 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
         Data data = symbol_table.get(className);
 
         List<String> info = new ArrayList<String>();
-        List<String> info = data.getMethods().get(method).getArgs();
+        info = data.getMethods().get(method).getArgs();
 
-        if(n.f4.accept(this).present() == false && info.size() != 0)
+        if(n.f4.present() == false && info.size() != 0)
             throw new SemanticError(); 
-        if(n.f4.accept(this).present()){
+        if(n.f4.present()){
             List<String> list = new ArrayList<String>();
             list = Arrays.asList(n.f4.accept(this).split(","));
 
@@ -588,9 +589,10 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
 
             // Check if the argument type are the same as they declared later.
             for( int i = 0; i < list.size(); i++)
-                if(!list.get(i).getClass().getName().eguals(types.get(i)))
+                if(!list.get(i).getClass().getName().equals(types.get(i)))
                     throw new SemanticError(); 
-        } 
+        }
+        return data.getMethods().get(method).getType(); 
     }
 
     /** ExpressionList
@@ -700,7 +702,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     public String visit(BooleanArrayAllocationExpression n) throws Exception {
         // Check if the type of expression f3 is integer.
         // If not => Throw Semantic Error!
-        if(!n.f3.accept(this).getClass().getName().eguals("int"))
+        if(!n.f3.accept(this).getClass().getName().equals("int"))
             throw new SemanticError();
         return "boolean[]";
     }
@@ -717,7 +719,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     public String visit(IntegerArrayAllocationExpression n) throws Exception {
         // Check if the type of expression f3 is integer.
         // If not => Throw Semantic Error!
-        if(!n.f3.accept(this).getClass().getName().eguals("int"))
+        if(!n.f3.accept(this).getClass().getName().equals("int"))
             throw new SemanticError();
         return "int[]";
     }
@@ -735,7 +737,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
         String id = n.f1.accept(this);
         boolean flag = false;
         for(String classname : symbol_table.keySet())
-            if(id.eguals(classname))
+            if(id.equals(classname))
                 flag = true;
         if(!flag)
             throw new SemanticError();
@@ -749,7 +751,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     !f1
     */
     public String visit(NotExpression n) throws Exception {
-        if(!n.f0.accept(this).eguals("boolean"))
+        if(!n.f0.accept(this).equals("boolean"))
             throw new SemanticError();
         return "boolean";
     }

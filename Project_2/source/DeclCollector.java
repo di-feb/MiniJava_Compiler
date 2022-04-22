@@ -6,11 +6,15 @@ import java.util.LinkedHashMap;
 import visitor.GJDepthFirst;
 import syntaxtree.*;
 
-public class DeclCollector extends GJDepthFirst< String, Data >{
+public class DeclCollector extends GJDepthFirst<String, Data>{
     private Map <String, Data> symbol_table;
 
     public DeclCollector(){
-        this.symbol_table = new LinkedHashMap < String, Data >();
+        this.symbol_table = new LinkedHashMap <String, Data>();
+    }
+
+    public Map <String, Data> getSymbolTable(){
+        return this.symbol_table;
     }
 
     /** Goal
