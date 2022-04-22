@@ -339,7 +339,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     }
 
     /** IfStatement
-     * f0 -> "if"
+    * f0 -> "if"
     * f1 -> "("
     * f2 -> Expression()
     * f3 -> ")"
@@ -366,7 +366,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     }
 
     /** WhileStatement
-     * f0 -> "while"
+    * f0 -> "while"
     * f1 -> "("
     * f2 -> Expression()
     * f3 -> ")"
@@ -403,7 +403,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
  }
 
     /** Expression
-     * f0 -> AndExpression()
+    * f0 -> AndExpression()
     *       | CompareExpression()
     *       | PlusExpression()
     *       | MinusExpression()
@@ -434,7 +434,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     }
 
     /** CompareExpression
-     * f0 -> PrimaryExpression()
+    * f0 -> PrimaryExpression()
     * f1 -> "<"
     * f2 -> PrimaryExpression()
     */
@@ -468,7 +468,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     }
 
     /**
-     * f0 -> PrimaryExpression()
+    * f0 -> PrimaryExpression()
     * f1 -> "-"
     * f2 -> PrimaryExpression()
 
@@ -486,7 +486,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     }
 
     /**
-     * f0 -> PrimaryExpression()
+    * f0 -> PrimaryExpression()
     * f1 -> "*"
     * f2 -> PrimaryExpression()
 
@@ -528,7 +528,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     }
 
     /** ArrayLength
-     * f0 -> PrimaryExpression()
+    * f0 -> PrimaryExpression()
     * f1 -> "."
     * f2 -> "length"
 
@@ -605,7 +605,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
 
 
     /** ExpressionTail
-     * f0 -> ( ExpressionTerm() )*
+    * f0 -> ( ExpressionTerm() )*
     */
     public String visit(ExpressionTail n) throws Exception {
         String expression_tail = "";
@@ -615,7 +615,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     }
 
     /** ExpressionTerm
-     * f0 -> ","
+    * f0 -> ","
     * f1 -> Expression()
     */
     public String visit(ExpressionTerm n) throws Exception {
@@ -624,7 +624,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     }
 
     /** Clause n
-     * f0 -> NotExpression()
+    * f0 -> NotExpression()
     *       | PrimaryExpression()
     */
     public String visit(Clause n) throws Exception {
@@ -632,7 +632,7 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
     }
 
     /** PrimaryExpression
-     * f0 -> IntegerLiteral()
+    * f0 -> IntegerLiteral()
     *       | TrueLiteral()
     *       | FalseLiteral()
     *       | Identifier()
@@ -645,22 +645,22 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
         return n.f0.accept(this);
     }
 
-    /**
-     * f0 -> <INTEGER_LITERAL>
+    /** IntegerLiteral
+    * f0 -> <INTEGER_LITERAL>
     */
     public String visit(IntegerLiteral n) throws Exception {
         return "int";
     }
 
-    /**
-     * f0 -> "true"
+    /** TrueLiteral
+    * f0 -> "true"
     */
     public String visit(TrueLiteral n) throws Exception {
         return "boolean";
     }
 
-    /**
-     * f0 -> "false"
+    /** FalseLiteral
+    * f0 -> "false"
     */
     public String visit(FalseLiteral n) throws Exception {
         return "boolean";
@@ -670,95 +670,99 @@ public class TypeChecker extends GJDepthFirst< String, Data >{
      * f0 -> <IDENTIFIER>
     */
     public String visit(Identifier n) throws Exception {
-        return n.f0.accept(this, argu);
+        return n.f0.toString();
     }
 
-    /**
-     * f0 -> "this"
+    /** ThisExpression
+    * f0 -> "this"
     */
-    public R visit(ThisExpression n, A argu) throws Exception {
-        return n.f0.accept(this, argu);
+    public String  visit(ThisExpression n) throws Exception {
+        return "this";
     }
 
-    /**
-     * f0 -> BooleanArrayAllocationExpression()
+    /** ArrayAllocationExpression
+    * f0 -> BooleanArrayAllocationExpression()
     *       | IntegerArrayAllocationExpression()
     */
-    public R visit(ArrayAllocationExpression n, A argu) throws Exception {
-        return n.f0.accept(this, argu);
+    public String visit(ArrayAllocationExpression n) throws Exception {
+        return n.f0.accept(this);
     }
 
-    /**
-     * f0 -> "new"
+    /** BooleanArrayAllocationExpression
+    * f0 -> "new"
     * f1 -> "boolean"
     * f2 -> "["
     * f3 -> Expression()
     * f4 -> "]"
+
+    new boolean[f3]
     */
-    public R visit(BooleanArrayAllocationExpression n, A argu) throws Exception {
-        R _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
-        n.f4.accept(this, argu);
-        return _ret;
+    public String visit(BooleanArrayAllocationExpression n) throws Exception {
+        // Check if the type of expression f3 is integer.
+        // If not => Throw Semantic Error!
+        if(!n.f3.accept(this).getClass().getName().eguals("int"))
+            throw new SemanticError();
+        return "boolean[]";
     }
 
-    /**
-     * f0 -> "new"
+    /** IntegerArrayAllocationExpressions
+    * f0 -> "new"
     * f1 -> "int"
     * f2 -> "["
     * f3 -> Expression()
     * f4 -> "]"
+
+    new int[f3]
     */
-    public R visit(IntegerArrayAllocationExpression n, A argu) throws Exception {
-        R _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
-        n.f4.accept(this, argu);
-        return _ret;
+    public String visit(IntegerArrayAllocationExpression n) throws Exception {
+        // Check if the type of expression f3 is integer.
+        // If not => Throw Semantic Error!
+        if(!n.f3.accept(this).getClass().getName().eguals("int"))
+            throw new SemanticError();
+        return "int[]";
     }
 
-    /**
-     * f0 -> "new"
+    /** AllocationExpression
+    * f0 -> "new"
     * f1 -> Identifier()
     * f2 -> "("
     * f3 -> ")"
+
+    new f1()
     */
-    public R visit(AllocationExpression n, A argu) throws Exception {
-        R _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
-        return _ret;
+    public String visit(AllocationExpression n) throws Exception {
+        // Check if the identifier f1 has been declared as a class
+        String id = n.f1.accept(this);
+        boolean flag = false;
+        for(String classname : symbol_table.keySet())
+            if(id.eguals(classname))
+                flag = true;
+        if(!flag)
+            throw new SemanticError();
+        return id.toString();
     }
 
     /**
-     * f0 -> "!"
+    * f0 -> "!"
     * f1 -> Clause()
+
+    !f1
     */
-    public R visit(NotExpression n, A argu) throws Exception {
-        R _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        return _ret;
+    public String visit(NotExpression n) throws Exception {
+        if(!n.f0.accept(this).eguals("boolean"))
+            throw new SemanticError();
+        return "boolean";
     }
 
     /**
-     * f0 -> "("
+    * f0 -> "("
     * f1 -> Expression()
     * f2 -> ")"
+
+    (f1)
     */
-    public R visit(BracketExpression n, A argu) throws Exception {
-        R _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        return _ret;
+    public String visit(BracketExpression n) throws Exception {
+        return n.f1.accept(this);
     }
 
 
