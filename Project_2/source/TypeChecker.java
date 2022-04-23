@@ -56,8 +56,6 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
             if(!varFlag && !methodFlag)
                 throw new SemanticError();
         }
-
-        
     }
 
     private boolean CheckForVarDeclaration(String var){
