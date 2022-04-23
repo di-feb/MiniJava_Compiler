@@ -2,7 +2,7 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.LinkedHashMap; 
+import java.util.HashMap; 
 import visitor.GJDepthFirst;
 import syntaxtree.*;
 
@@ -10,7 +10,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     private Map <String, Data> symbol_table;
 
     public DeclCollector(){
-        this.symbol_table = new LinkedHashMap <String, Data>();
+        this.symbol_table = new HashMap <String, Data>();
     }
 
     public Map <String, Data> getSymbolTable(){
@@ -71,7 +71,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     *       | ClassExtendsDeclaration()
     */
     public String visit(TypeDeclaration n, Data data) throws Exception {
-        n.f0.accept(this, null);
+        n.f0.accept(this, data);
         return null;
     }  
 
