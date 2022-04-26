@@ -1,4 +1,3 @@
-import java.util.Vector;
 import visitor.GJDepthFirst;
 import syntaxtree.*;
 
