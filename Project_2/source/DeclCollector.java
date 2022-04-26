@@ -8,8 +8,10 @@ import syntaxtree.*;
 
 public class DeclCollector extends GJDepthFirst<String, Data>{
     private Map <String, Data> symbol_table;
+    private String currMethod;
 
     public DeclCollector(){
+        currMethod = null;
         this.symbol_table = new HashMap <String, Data>();
     }
 
@@ -63,6 +65,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
 
         // After the infos for the "main" classes gathered push the data into the Map
         symbol_table.put(name, mains_data);
+        currMethod = null;
         return null;
     }
 
@@ -71,7 +74,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     *       | ClassExtendsDeclaration()
     */
     public String visit(TypeDeclaration n, Data data) throws Exception {
-        n.f0.accept(this, data);
+        n.f0.accept(this, null);
         return null;
     }  
 
@@ -108,6 +111,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
 
         // After the infos for the class gathered push the data into the Map
         symbol_table.put(name, class_data);
+        currMethod = null;
         return null;
     }
 
@@ -154,6 +158,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
 
         // After the infos for the class gathered push the data into the Map
         symbol_table.put(name, class_data);
+        currMethod = null;
         return null;
     }
 
@@ -167,19 +172,33 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         String var_type = n.f0.accept(this, null);
         String var_name = n.f1.accept(this, null);
 
-        // If var_name already existed inside data.getVars map it means,
-        // we had a redeclaration of that variable inside the same class.
-        // We do not want that => Throw Semantic Error!
-        if(data.getVars().containsKey(var_name))
-            throw new SemanticError();
-
         // Make a VarInfo class to store the info you get,
         // and then pass the varInfo into the Data. 
         VarInfo vars_value = new VarInfo();
         vars_value.setType(var_type);
         vars_value.setOffset(0); // We will deal with offset later!!!
 
-        data.getVars().put(var_name, vars_value);
+        if(currMethod != null) {// That means that the varDeclaration is inside a method
+            // If var_name already existed inside data.getMethods().get( currMethod).getVars() map and that 
+            // class has not been declared as a child of another class it means,
+            // we had a redeclaration of that variable inside the same method.
+            // We do not want that => Throw Semantic Error!
+            if(data.getMethods().get(currMethod).getVars().containsKey(var_name) && data.getName() == null)
+                throw new SemanticError();
+            data.getMethods().get(currMethod).getVars().put(var_name, vars_value);
+        }
+        else {   // This means that the varDeclaration is for a field of the class
+            if(currMethod == null) {// That means that the varDeclaration is inside a method
+                // If var_name already existed inside data.getVars() map and that 
+                // class has not been declared as a child of another class it means,0
+                // we had a redeclaration of that variable field inside the same class.
+                // We do not want that => Throw Semantic Error!
+                if(data.getVars().containsKey(var_name) && data.getName() == null)
+                    throw new SemanticError();
+                data.getVars().put(var_name, vars_value);
+            }
+        }
+        
 
         return null;
     }  
@@ -201,7 +220,15 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     public String visit(MethodDeclaration n, Data data) throws Exception {
         String ret_type = n.f1.accept(this, null);   
         String method_name = n.f2.accept(this, null); 
+        currMethod = method_name; 
         List<String> parameters = new ArrayList<String>();
+
+        // If var_name already existed inside data.getMethods map and that 
+        // class has not been declared as a child of another class it means,
+        // we had a redeclaration of that method inside the same class.
+        // We do not want that => Throw Semantic Error!
+        if(data.getMethods().containsKey(method_name) && data.getName() == null)
+            throw new SemanticError();
 
         // If the method has arguments accept will return a string with the arguments in a way like this:
         // (type id, type id, ...)
@@ -215,9 +242,9 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
             for( int i = 0; i < parameters.size(); i++)
                 list.add(Arrays.asList(parameters.get(i).split(" ")).get(1));
 
-            for(String var1: list)
-                for(String var2: list)
-                    if(var1.equals(var2))
+            for(int i = 0; i < list.size() - 1; i++)
+                for(int j = i + 1; j < list.size(); j++)
+                    if(list.get(i).equals(list.get(j)))
                         throw new SemanticError();
             
         }
@@ -328,4 +355,9 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     public String visit(IntegerType n, Data data) throws Exception {
         return "int";
     }
+
+    public String visit(Identifier n, Data data) throws Exception {
+        return n.f0.toString();
+    }
+
 }
