@@ -1,7 +1,6 @@
 import syntaxtree.*;
 import visitor.*;
 import java.io.*;
-import java.lang.ProcessBuilder.Redirect.Type;
 import java.util.Map;
 import java.util.LinkedHashMap;
 
