@@ -185,6 +185,8 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
             // We do not want that => Throw Semantic Error!
             if(data.getMethods().get(currMethod).getVars().containsKey(var_name) && data.getName() == null)
                 throw new SemanticError();
+            if(data.getMethods().get(currMethod).getArgs().contains(var_name) && data.getName() == null)
+                throw new SemanticError();
             data.getMethods().get(currMethod).getVars().put(var_name, vars_value);
         }
         else {   // This means that the varDeclaration is for a field of the class
