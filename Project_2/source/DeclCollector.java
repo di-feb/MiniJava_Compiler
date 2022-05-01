@@ -171,34 +171,30 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         // Keep the name and the type off the var.
         String var_type = n.f0.accept(this, null);
         String var_name = n.f1.accept(this, null);
-
-        // Make a VarInfo class to store the info you get,
-        // and then pass the varInfo into the Data. 
-        VarInfo vars_value = new VarInfo();
-        vars_value.setType(var_type);
-        vars_value.setOffset(0); // We will deal with offset later!!!
-
-        if(currMethod != null) {// That means that the varDeclaration is inside a method
-            // If var_name already existed inside data.getMethods().get( currMethod).getVars() map and that 
-            // class has not been declared as a child of another class it means,
-            // we had a redeclaration of that variable inside the same method.
+        
+        if(currMethod != null) {// That means that the varDeclaration is inside a method 
+            // Check for a redeclaration of that variable inside the same method.
             // We do not want that => Throw Semantic Error!
-            if(data.getMethods().get(currMethod).getVars().containsKey(var_name) && data.getName() == null)
+            if(data.getMethods().get(currMethod).getVars().containsKey(var_name))
                 throw new SemanticError();
-            if(data.getMethods().get(currMethod).getArgs().contains(var_name) && data.getName() == null)
+            if(data.getMethods().get(currMethod).getArgs().containsKey(var_name))
                 throw new SemanticError();
-            data.getMethods().get(currMethod).getVars().put(var_name, vars_value);
+            // Store the variable.
+            data.getMethods().get(currMethod).getVars().put(var_name, var_type);
         }
-        else {   // This means that the varDeclaration is for a field of the class
-            if(currMethod == null) {// That means that the varDeclaration is inside a method
-                // If var_name already existed inside data.getVars() map and that 
-                // class has not been declared as a child of another class it means,0
-                // we had a redeclaration of that variable field inside the same class.
-                // We do not want that => Throw Semantic Error!
-                if(data.getVars().containsKey(var_name) && data.getName() == null)
-                    throw new SemanticError();
-                data.getVars().put(var_name, vars_value);
-            }
+        else {  // This means that the varDeclaration is for a field of the class
+
+            // Make a VarInfo class to store the info you get,
+            // and then pass the varInfo into the Data. 
+            VarInfo vars_value = new VarInfo();
+            vars_value.setType(var_type);
+            vars_value.setOffset(0); // We will deal with offset later!!!
+
+            // Check for a redeclaration of that variable inside the same class.
+            // We do not want that => Throw Semantic Error!
+            if(data.getVars().containsKey(var_name))
+                throw new SemanticError();
+            data.getVars().put(var_name, vars_value);
         }
         
 
@@ -223,47 +219,27 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         String ret_type = n.f1.accept(this, null);   
         String method_name = n.f2.accept(this, null); 
         currMethod = method_name; 
-        List<String> parameters = new ArrayList<String>();
 
-        // If var_name already existed inside data.getMethods map and that 
-        // class has not been declared as a child of another class it means,
+        // If var_name already existed inside data.getMethods map it means 
         // we had a redeclaration of that method inside the same class.
         // We do not want that => Throw Semantic Error!
-        if(data.getMethods().containsKey(method_name) && data.getName() == null)
+        if(data.getMethods().containsKey(method_name))
             throw new SemanticError();
-
-        // If the method has arguments accept will return a string with the arguments in a way like this:
-        // (type id, type id, ...)
-        if(n.f4.present()) {
-            List<String> list = new ArrayList<String>();
-            parameters = Arrays.asList(n.f4.accept(this, null).split(","));
-            // Take only the name of the variable and store it to a list to check
-            // for redeclaration.
-            // If we have declare a parameter into a method more than one time 
-            // (same name) =>throw parse error!!! 
-            for( int i = 0; i < parameters.size(); i++)
-                list.add(Arrays.asList(parameters.get(i).split(" ")).get(1));
-
-            for(int i = 0; i < list.size() - 1; i++)
-                for(int j = i + 1; j < list.size(); j++)
-                    if(list.get(i).equals(list.get(j)))
-                        throw new SemanticError();
-            
-        }
 
         // Make a VarInfo class to store the info you get,
         // and then pass the varInfo into the Data. 
         MethodInfo method_value = new MethodInfo();
         method_value.setType(ret_type);
-        method_value.setParameters(parameters);
         method_value.setOffset(0); // We will deal with offset later!!!
-
         data.getMethods().put(method_name, method_value);
+        if(n.f4.present()) 
+            // Pass the data to store the parameters.
+            n.f4.accept(this, data);
 
         // Pass data down to parse tree to collect the info 
         for( int i = 0; i < n.f7.size(); i++ )
             n.f7.elementAt(i).accept(this, data);
-
+        currMethod = null;
         return null;
     }
 
@@ -274,9 +250,9 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     */
     // It will go and fill up recursivly the args field of the method_info field of the Data class
     public String visit(FormalParameterList n, Data data) throws Exception {
-        String parameter = n.f0.accept(this, null);   
-        String parameter_tail = n.f1.accept(this, null);   
-        return parameter + parameter_tail;
+        n.f0.accept(this, data);   
+        n.f1.accept(this, data);   
+        return null;
     }
 
     /** FormalParameter
@@ -286,17 +262,22 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     public String visit(FormalParameter n, Data data) throws Exception {
         String type = n.f0.accept(this, null);   
         String name = n.f1.accept(this, null);
-        return type + " " + name;
+        // Check if we have duplicates at the argument list.
+        HashMap < String, String > args = data.getMethods().get(currMethod).getArgs();
+        if(args.containsKey(name))
+            throw new SemanticError();
+        
+        data.getMethods().get(currMethod).getArgs().put(name, type);
+        return null;
     }
 
     /** FormalParameterTail
     * f0 -> ( FormalParameterTerm() )*
     */
     public String visit(FormalParameterTail n, Data data) throws Exception {
-        String parameter_tail = "";
-        for( int i = 0; i < n.f0.size(); i++ )
-            parameter_tail += n.f0.elementAt(i).accept(this, null);
-        return parameter_tail;
+        for( int i = 0; i < n.f0.size(); i++)
+            n.f0.elementAt(i).accept(this, data);
+        return null;
     }
 
     /** FormalParameterTerm
@@ -304,8 +285,8 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     * f1 -> FormalParameter()
     */
     public String visit(FormalParameterTerm n, Data data) throws Exception {   
-        String parameter = n.f1.accept(this, null);
-        return ", " + parameter;
+        n.f1.accept(this, data);
+        return null;
     }
 
     /** Type

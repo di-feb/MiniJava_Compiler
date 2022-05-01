@@ -18,18 +18,18 @@ public class Main {
 
             Goal root = parser.Goal();
 
-            System.err.println("Program parsed successfully.\n");
+            System.err.println("Program parsed successfully.");
 
             // First iteration of the parse tree in order to build the symbol_table
             DeclCollector collector = new DeclCollector();
             root.accept(collector, null);
-            System.err.println("First iteration completed successfully.\n");
+            System.err.println("First iteration completed successfully.");
 
             // Second iteration of the parse tree in order to do type checking
             // with the help of the symbol table we built at the first iteration.
             TypeChecker checker = new TypeChecker(collector.getSymbolTable());
             root.accept(checker);
-            System.err.println("Second iteration completed successfully.\n");
+            System.err.println("Second iteration completed successfully.");
         }
         catch(ParseException ex){
             System.out.println(ex.getMessage());

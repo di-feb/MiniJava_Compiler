@@ -12,19 +12,34 @@ import syntaxtree.*;
 public class TypeChecker extends GJNoArguDepthFirst< String >{
     private String className;                   // The className of the class we are into 
     private String methodName;                  // The methodName of the class we are into 
-    // private List <String> varsInScope;          // A list that holds every variable that we can use
     private Map <String, Data> symbol_table;    // The symbol table we construct later with the DeclCollector
 
     // Constructor
     TypeChecker(Map <String, Data> symbol_table){
         this.symbol_table = symbol_table;
         this.className = null;
+        this.methodName = null;
     }
 
-    boolean isPrimitive(String type){
+    // Check if the given type is primitive
+    private boolean isPrimitive(String type){
         if(type != "int[]" && type != "boolean[]" && type != "boolean" && type != "int")
             return false;
         return true;
+    }
+
+    // Check if the child type is SubType of another type
+    private boolean isSubType(String childType, String parentType){
+        // If the childType is primitive then it must be identicall with parentType
+        if(isPrimitive(childType))
+            return childType.equals(parentType);
+
+        while(parentType != null){
+            if(childType.equals(parentType))
+                return true;
+            parentType = symbol_table.get(parentType).getName();
+        }        
+        return false;
     }
 
     private void CheckForDeclaration(String value, int mode) throws Exception {
@@ -32,7 +47,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         Boolean methodFlag = false;
         Boolean classFlag = false;
         if(mode == 0){
-            varFlag = CheckForVarDeclaration(value, false);
+            varFlag = CheckForVarDeclaration(value);
             if(!varFlag)
                 throw new SemanticError();
         }
@@ -47,13 +62,13 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
                 throw new SemanticError();
         }
         else if (mode == 3){
-            classFlag = CheckForVarDeclaration(value, false);
+            classFlag = CheckForVarDeclaration(value);
             methodFlag = CheckForMethodDeclaration(value);
             if(!varFlag && !methodFlag)
                 throw new SemanticError();
         }
         else{
-            varFlag = CheckForVarDeclaration(value, false);
+            varFlag = CheckForVarDeclaration(value);
             methodFlag = CheckForMethodDeclaration(value);
             classFlag = CheckForClassDeclaration(value);
             if(!varFlag && !methodFlag && !classFlag)
@@ -61,51 +76,58 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         }
     }
 
-    private boolean CheckForVarDeclaration(String var, boolean parentFlag){
-        String curClassName = className;
-        boolean flag = false;
+    private boolean CheckForVarDeclaration(String var){
         Data data = symbol_table.get(className);
         String parentClassName = symbol_table.get(className).getName();
         // Check for decleration recursevly to the parent classes.
-        if(parentFlag == false){
-            if(data.getVars().containsKey(var) || (methodName != null && data.getMethods().get(methodName).getVars().containsKey(var)) || (methodName != null && data.getMethods().get(methodName).getArgs().getcontains(var)))
-                return true;
-        }
+        if(data.getVars().containsKey(var) || (methodName != null && data.getMethods().get(methodName).getVars().containsKey(var)) || (methodName != null && data.getMethods().get(methodName).getArgs().containsKey(var)))
+            return true;
+        
         if( parentClassName == null)
             return false;
         do{
-
+            if(symbol_table.get(parentClassName).getVars().containsKey(var))
+                return true;
+            parentClassName = symbol_table.get(parentClassName).getName();
         }while(parentClassName != null);
-        // else if(parentClassName != null) {
-        //     if(symbol_table.get(parentClassName).getVars().containsKey(var))
-        //         return true;
-        //     className = parentClassName;
-        //     flag = CheckForVarDeclaration(var, true);
-        // }
-        className = curClassName;
-        return flag;
+        return false;
     }
-    
-    private boolean CheckForMethodDeclaration(String method){
-        String curClassName = className;
-        boolean flag = false;
+
+    private String getVarType(String var){
         Data data = symbol_table.get(className);
         String parentClassName = symbol_table.get(className).getName();
+        // Check for decleration recursevly to the parent classes.
+        if(data.getVars().containsKey(var))
+            return data.getVars().get(var).getType();
+        if (methodName != null && data.getMethods().get(methodName).getVars().containsKey(var))
+            return data.getMethods().get(methodName).getVars().get(var);
+        if(methodName != null && data.getMethods().get(methodName).getArgs().containsKey(var))
+            return data.getMethods().get(methodName).getArgs().get(var);
+        if(parentClassName == null)
+            return null;
+        do{
+            if(symbol_table.get(parentClassName).getVars().containsKey(var))
+                return symbol_table.get(parentClassName).getVars().get(var).getType();
+            parentClassName = symbol_table.get(parentClassName).getName();
+        }while(parentClassName != null);
+        return null;
+    }
+
+
+    
+    private boolean CheckForMethodDeclaration(String method){
+        String parentClassName = symbol_table.get(className).getName();
         if( parentClassName == null){
-            if (data.getMethods().containsKey(method))
+            if (symbol_table.get(className).getMethods().containsKey(method))
                 return true;
             else return false;
         }
-        else if( parentClassName != null){
-            if (data.getMethods().containsKey(method))
+        do{
+            if (symbol_table.get(parentClassName).getMethods().containsKey(method))
                 return true;
-            else{ 
-                className = parentClassName;
-                flag = CheckForMethodDeclaration(method);
-            }
-        }
-        className = curClassName;
-        return flag;
+            parentClassName = symbol_table.get(parentClassName).getName();
+        }while( parentClassName != null);
+        return false;
     }
 
     private boolean CheckForClassDeclaration(String class_){
@@ -254,14 +276,14 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         }
     */
     public String visit(MethodDeclaration n) throws Exception {
-        String ret_type = n.f1.accept(this);  
+        String method_RetType = n.f1.accept(this);  
 
         String method_name = n.f2.accept(this); 
         methodName = method_name;
 
         // We need to check if type is different from (int, boolean, int[], boolean[]) or the other non-primitive types.
         // if it is => Throw Semantic Error!
-        if(!isPrimitive(ret_type) && !symbol_table.containsKey(ret_type))
+        if(!isPrimitive(method_RetType) && !symbol_table.containsKey(method_RetType))
             throw new SemanticError();
 
             
@@ -276,7 +298,8 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         
         // The return type of the return statement need to match with the return type of this method.
         // If it does not => Throw Semantic Error!
-        if(!(n.f10.accept(this)).equals(ret_type)) // μπορει να ειναι και υποτυπος.
+        String value_RetType = n.f10.accept(this);
+        if(!(value_RetType).equals(method_RetType) && !isSubType(value_RetType, method_RetType)) // μπορει να ειναι και υποτυπος.
             throw new SemanticError();
         
         methodName = null;
@@ -386,7 +409,8 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     *       | PrintStatement()
     */
     public String visit(Statement n) throws Exception {
-        return n.f0.accept(this);
+        n.f0.accept(this);
+        return null; 
     }
 
     /** Block
@@ -416,12 +440,11 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         // If not => Throw Semantic Error!
         String var = n.f0.accept(this);
         CheckForDeclaration(var, 0);
-        
-        String idType = symbol_table.get(className).getVars().get(var).getType();
+        String idType = getVarType(var);
         
         // Check if the type of the expression match the type of the identifier.
         // If not => Throw Semantic Error!
-        if(!n.f2.accept(this).equals(idType))
+        if(!n.f2.accept(this).equals(idType) && !isSubType(var, idType))
             throw new SemanticError();  //ypotupos
         
         return null;
@@ -443,7 +466,9 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         String id = n.f0.accept(this);
         CheckForDeclaration(id, 3);
         
-        String idType = symbol_table.get(className).getVars().get(id).getType();
+        String idType = getVarType(id);
+        if(idType == null || (!idType.equals("int[]") && !idType.equals("boolean[]")))
+            throw new SemanticError();
 
         // Check if the type of the expression f2 is interger.
         // If not => Throw Semantic Error!
@@ -557,7 +582,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     * f2 -> PrimaryExpression()
     */
     public String visit(CompareExpression n) throws Exception {
-        if(!n.f0.accept(this).equals("boolean") || !n.f2.accept(this).equals("boolean"))
+        if(!n.f0.accept(this).equals("int") || !n.f2.accept(this).equals("int"))
             throw new SemanticError();
         return "boolean";
     }
@@ -632,12 +657,9 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     f0.length
     */
     public String visit(ArrayLength n) throws Exception {
-        // Check if the var or method has been declared.
-        String var = n.f0.accept(this);
-        CheckForDeclaration(var, 3);
-
+        String type = n.f0.accept(this);
         // Check if the type of var is arrayType.
-        if(!var.equals("int[]") && !var.equals("boolean[]"))
+        if(!type.equals("int[]") && !type.equals("boolean[]"))
             throw new SemanticError();    
         return "int";
     }
@@ -654,49 +676,36 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     */
     public String visit(MessageSend n) throws Exception {
         // Check if the var or method have been declared.
-        String var = n.f0.accept(this);
-        if(!var.equals("this"))
-            CheckForDeclaration(var, 4);
+        String type = n.f0.accept(this);
+        if(!type.equals("this"))
+            CheckForDeclaration(type, 4);
 
-        // Check if the method has been declared.
+        // Check if the method f2 has been declared.
         String method = n.f2.accept(this);
-        if(CheckForClassDeclaration(var)){
-            String curClassName = className;
-            className = var;
+        if(CheckForClassDeclaration(type)){     // Check if the primary expression f0 is another class
+            String curClassName = className;    // If it is check inside this class for the method too
+            className = type;
             if(!CheckForMethodDeclaration(method)){
                 className = curClassName;
                 CheckForDeclaration(method, 1);
             }
         }
+        CheckForDeclaration(method, 1); // If it's not, check only inside our current class
 
         // Check if the argument types are correct.
         Data data = symbol_table.get(className);
+        HashMap<String, String> args = new HashMap<String, String>();
+        args = data.getMethods().get(method).getArgs();
 
-        List<String> info = new ArrayList<String>();
-        info = data.getMethods().get(method).getArgs();
-
-        if(n.f4.present() == false && info.size() != 0)
+        // Check if args number is the same
+        if(n.f4.present() == false && args.size() != 0)
             throw new SemanticError(); 
-        if(n.f4.present() == true && info.size() == 0)
-            throw new SemanticError(); 
-        // if(n.f4.present() && info.size() != 0){
-        //     List<String> list = new ArrayList<String>();
-        //     // Take the args on a list
-        //     list = Arrays.asList(n.f4.accept(this).split(","));
+        if(n.f4.present()){
+            List<String> exp_list = n.f4.accept(this);
+            if(exp_list.size() != args.size())
+                throw new SemanticError(); 
+        }
 
-        //     // Hold the types of the method's argument for matching checking.
-        //     List<String> types = new ArrayList<String>();   
-        //     for( int i = 0; i < info.size(); i++)
-        //         types.add(Arrays.asList(info.get(i).split(" ")).get(0));
-
-        //     // Check if the argument type are the same as they declared later.
-        //     for( int i = 0; i < list.size(); i++)
-        //         if(!list.get(i).equals(types.get(i))){
-        //             throw new SemanticError();
-        //         } 
-
-
-        // }
         return data.getMethods().get(method).getType(); 
     }
 
@@ -704,21 +713,25 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     * f0 -> Expression()
     * f1 -> ExpressionTail()
     */
-    public String visit(ExpressionList n) throws Exception {
+    public List<String> visit(ExpressionList n) throws Exception {
         String expression = n.f0.accept(this);   
-        String expression_tail = n.f1.accept(this);   
-        return expression + expression_tail;
+        String expression_tail = n.f1.accept(this); 
+
+        List<String> list = new List<String>();
+        list.add(expression);
+        list.addAll(expression_tail);
+        return list;
     }
 
 
     /** ExpressionTail
     * f0 -> ( ExpressionTerm() )*
     */
-    public String visit(ExpressionTail n) throws Exception {
-        String expression_tail = "";
+    public List<String> visit(ExpressionTail n) throws Exception {
+        List<String> list = new List<String>();
         for( int i = 0; i < n.f0.size(); i++ )
-            expression_tail += n.f0.elementAt(i).accept(this);
-        return expression_tail;
+            list.add(n.f0.elementAt(i).accept(this));
+        return list;
     }
 
     /** ExpressionTerm
@@ -726,8 +739,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     * f1 -> Expression()
     */
     public String visit(ExpressionTerm n) throws Exception {
-        String expression = n.f1.accept(this);
-        return ", " + expression;
+        return  n.f1.accept(this);
     }
 
     /** Clause n
@@ -750,22 +762,20 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     */
     public String visit(PrimaryExpression n) throws Exception {
         // Check if the PrimaryExpression is an identifier.
-        String var = n.f0.accept(this);
+        String exp = n.f0.accept(this);
         if(n.f0.which == 3){
-            CheckForDeclaration(var, 3); // Check for declaration
+            CheckForDeclaration(exp, 0); // Check for declaration
             // If it has been declared => find and return its type.
-            String type = symbol_table.get(className).getVars().get(var).getType();
-            return type;
+            return getVarType(exp);
         }
-        else
-            return var;
+        return exp;
     }
 
     /** IntegerLiteral
     * f0 -> <INTEGER_LITERAL>
     */
     public String visit(IntegerLiteral n) throws Exception {
-        return "integer";
+        return "int";
     }
 
     /** TrueLiteral
@@ -849,11 +859,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     public String visit(AllocationExpression n) throws Exception {
         // Check if the identifier f1 has been declared as a class
         String id = n.f1.accept(this);
-        boolean flag = false;
-        for(String classname : symbol_table.keySet())
-            if(id.equals(classname))
-                flag = true;
-        if(!flag)
+        if(!symbol_table.containsKey(id))
             throw new SemanticError();
         return id.toString();
     }
