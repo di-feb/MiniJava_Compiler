@@ -4,7 +4,7 @@ J = java
 
 MAIN = Main.java
 CLASSES = Main
-INPUT = ../tests/BinaryTree.java
+INPUT = ../tests/minijava-extra/ManyClasses.java
 
 compile:
 	$(J) -jar ../jtb132di.jar -te minijava.jj

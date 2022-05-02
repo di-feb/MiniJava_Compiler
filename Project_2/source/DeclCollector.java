@@ -19,6 +19,28 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         return this.symbol_table;
     }
 
+    // Check if a method is inherited from a parent class.
+    private boolean isInheritedMethod(String method, Data data){
+        String parentClass = data.getName();
+        while(parentClass != null){
+            if(data.getMethods().containsKey(method))
+                return true;
+            parentClass = symbol_table.get(parentClass).getName();
+        }        
+        return false;
+    }
+
+    // Check if a method is inherited from a parent class.
+    private boolean isInheritedVariable(String var, Data data){
+        String parentClass = data.getName();
+        while(parentClass != null){
+            if(data.getVars().containsKey(var))
+                return true;
+            parentClass = symbol_table.get(parentClass).getName();
+        }        
+        return false;
+    }
+
     /** Goal
     * f0 -> MainClass()
     * f1 -> ( TypeDeclaration() )*
@@ -65,7 +87,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
 
         // After the infos for the "main" classes gathered push the data into the Map
         symbol_table.put(name, mains_data);
-        currMethod = null;
+
         return null;
     }
 
@@ -111,7 +133,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
 
         // After the infos for the class gathered push the data into the Map
         symbol_table.put(name, class_data);
-        currMethod = null;
+
         return null;
     }
 
@@ -158,7 +180,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
 
         // After the infos for the class gathered push the data into the Map
         symbol_table.put(name, class_data);
-        currMethod = null;
+
         return null;
     }
 
@@ -192,11 +214,10 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
 
             // Check for a redeclaration of that variable inside the same class.
             // We do not want that => Throw Semantic Error!
-            if(data.getVars().containsKey(var_name))
+            if(data.getVars().containsKey(var_name) && !isInheritedVariable(var_name, data))
                 throw new SemanticError();
             data.getVars().put(var_name, vars_value);
         }
-        
 
         return null;
     }  
@@ -223,7 +244,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         // If var_name already existed inside data.getMethods map it means 
         // we had a redeclaration of that method inside the same class.
         // We do not want that => Throw Semantic Error!
-        if(data.getMethods().containsKey(method_name))
+        if(data.getMethods().containsKey(method_name) && !isInheritedMethod(method_name, data))
             throw new SemanticError();
 
         // Make a VarInfo class to store the info you get,
