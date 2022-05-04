@@ -4,7 +4,7 @@ J = java
 
 MAIN = Main.java
 CLASSES = Main
-INPUT = ../tests/minijava-extra/ManyClasses.java
+INPUT = ../tests
 
 compile:
 	$(J) -jar ../jtb132di.jar -te minijava.jj
@@ -12,7 +12,7 @@ compile:
 	$(JC) $(MAIN) 
 
 semantic_check:
-	$(J) $(CLASSES) $(INPUT)
-
+	$(J) $(CLASSES)  $(wildcard $(INPUT)/*/*.java)
+	$(J) $(CLASSES)  $(wildcard $(INPUT)/*.java)
 clean:
 	rm -rf *.class *~ *Parse* *Token* *jtb* *CharStream* syntaxtree visitor

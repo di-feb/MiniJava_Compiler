@@ -1,8 +1,9 @@
 import java.util.Map;
+import java.util.HashMap; 
+import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.HashMap; 
 import visitor.GJDepthFirst;
 import syntaxtree.*;
 
@@ -23,18 +24,28 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     private boolean isInheritedMethod(String method, Data data){
         String parentClass = data.getName();
         while(parentClass != null){
-            if(data.getMethods().containsKey(method))
+            if(symbol_table.get(parentClass).getMethods().containsKey(method))
                 return true;
             parentClass = symbol_table.get(parentClass).getName();
         }        
         return false;
     }
 
+    private String getParentOfInheritedMethod(String method, Data data){
+        String parentClass = data.getName();
+        while(parentClass != null){
+            if(symbol_table.get(parentClass).getMethods().containsKey(method))
+                return parentClass;
+            parentClass = symbol_table.get(parentClass).getName();
+        }        
+        return null;
+    }
+
     // Check if a method is inherited from a parent class.
     private boolean isInheritedVariable(String var, Data data){
         String parentClass = data.getName();
         while(parentClass != null){
-            if(data.getVars().containsKey(var))
+            if(symbol_table.get(parentClass).getVars().containsKey(var))
                 return true;
             parentClass = symbol_table.get(parentClass).getName();
         }        
@@ -256,7 +267,36 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         if(n.f4.present()) 
             // Pass the data to store the parameters.
             n.f4.accept(this, data);
+        // If a method is inherited check if the arguments are the same
+        if(isInheritedMethod(method_name, data)){
+            String parentClass = getParentOfInheritedMethod(method_name, data);
 
+            int parent_args_size = symbol_table.get(parentClass).getMethods().get(method_name).getArgs().size();
+            int args_size = data.getMethods().get(method_name).getArgs().size();
+
+            HashMap<String, String> args = new HashMap<String, String>();
+            args = data.getMethods().get(method_name).getArgs();
+
+            HashMap<String, String> parent_args = new HashMap<String, String>();
+            parent_args = symbol_table.get(parentClass).getMethods().get(method_name).getArgs();
+            
+            // If arguments have different size.
+            if(parent_args_size != args_size)
+                throw new SemanticError();
+            // If arguments have different type.
+            int i = 0;
+            for(String type1: parent_args.keySet()){
+                for(String type2: args.keySet()){
+                    int j = 0;
+                    if(j++ < i)
+                        continue;
+                    if(!type1.equals(type2))
+                        throw new SemanticError();
+                    i++;
+                    break; 
+                }
+            }
+        }
         // Pass data down to parse tree to collect the info 
         for( int i = 0; i < n.f7.size(); i++ )
             n.f7.elementAt(i).accept(this, data);
@@ -284,7 +324,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         String type = n.f0.accept(this, null);   
         String name = n.f1.accept(this, null);
         // Check if we have duplicates at the argument list.
-        HashMap < String, String > args = data.getMethods().get(currMethod).getArgs();
+        LinkedHashMap < String, String > args = data.getMethods().get(currMethod).getArgs();
         if(args.containsKey(name))
             throw new SemanticError();
         

@@ -1,8 +1,6 @@
 import java.util.Map;
-
-import javax.swing.text.html.HTMLDocument.BlockElement;
-
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -31,13 +29,13 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     // Check if the child type is SubType of another type
     private boolean isSubType(String childType, String parentType){
         // If the childType is primitive then it must be identicall with parentType
-        if(isPrimitive(childType))
+        if(isPrimitive(childType) || isPrimitive(parentType))
             return childType.equals(parentType);
 
-        while(parentType != null){
+        while(childType != null){
             if(childType.equals(parentType))
                 return true;
-            parentType = symbol_table.get(parentType).getName();
+            childType = symbol_table.get(childType).getName();
         }        
         return false;
     }
@@ -80,9 +78,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         Data data = symbol_table.get(classname);
         if(data == null) return false; 
 
-        String parentClassName = symbol_table.get(classname).getName();
-
-        // Check for decleration recursevly to the parent classes.
+        // Check for decleration .
         if(data.getVars().containsKey(var))
             return true;
         if(methodName != null && data.getMethods().get(methodName) != null){
@@ -91,56 +87,30 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
             if(data.getMethods().get(methodName).getVars().containsKey(var))
                 return true;
         }
-
-        if( parentClassName == null)
-            return false;
-        do{
-            if(symbol_table.get(parentClassName).getVars().containsKey(var))
-                return true;
-            parentClassName = symbol_table.get(parentClassName).getName();
-        }while(parentClassName != null);
         return false;
     }
-
+    // Get the type of the variable.
+    // Precedence: method variables, method args > classe's fields
     private String getVarType(String var, String classname){
         Data data = symbol_table.get(classname);
         String parentClassName = symbol_table.get(classname).getName();
-        // Check for decleration recursevly to the parent classes.
-        if(data.getVars().containsKey(var))
-            return data.getVars().get(var).getType();
-
+        
         if(methodName != null && data.getMethods().get(methodName) != null){
             if (data.getMethods().get(methodName).getVars().containsKey(var))
                 return data.getMethods().get(methodName).getVars().get(var);
             if(data.getMethods().get(methodName).getArgs().containsKey(var))
                 return data.getMethods().get(methodName).getArgs().get(var);
         }
-
-        if(parentClassName == null)
-            return null;
-
-        do{
-            if(symbol_table.get(parentClassName).getVars().containsKey(var))
-                return symbol_table.get(parentClassName).getVars().get(var).getType();
-            parentClassName = symbol_table.get(parentClassName).getName();
-        }while(parentClassName != null);
+        if(data.getVars().containsKey(var))
+            return data.getVars().get(var).getType();
         return null;
     }
 
 
     
-    private boolean CheckForMethodDeclaration(String method, String classname){
-        String parentClassName = symbol_table.get(classname).getName();
-        if( parentClassName == null){
-            if (symbol_table.get(classname).getMethods().containsKey(method))
-                return true;
-            else return false;
-        }
-        do{
-            if (symbol_table.get(parentClassName).getMethods().containsKey(method))
-                return true;
-            parentClassName = symbol_table.get(parentClassName).getName();
-        }while( parentClassName != null);
+    private boolean CheckForMethodDeclaration(String method, String classname){      
+        if (symbol_table.get(classname).getMethods().containsKey(method))
+            return true;        
         return false;
     }
 
@@ -688,9 +658,9 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     f0.f2(f4)
     */
     public String visit(MessageSend n) throws Exception {
-        // Check if the var or method have been declared.
+        // Check if the type of the exp has been declared.
         String type = n.f0.accept(this);
-        CheckForDeclaration(type, className, 4);
+        CheckForDeclaration(type, className, 2);
 
         // Check if the method f2 has been declared.
         String method = n.f2.accept(this);
@@ -698,8 +668,9 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         if(CheckForClassDeclaration(type)){                 // Check if the primary expression f0 is another class
             if(CheckForMethodDeclaration(method, type))     // If it is check inside this class for the method too 
                 flag = true;
-            else
+            else{
                 CheckForDeclaration(method, className, 1); // And then if the method does not be found there check into the current class for it.
+            }
         }
         else
             CheckForDeclaration(method, className,1); // If the primary expression f0 it's not another class, check only inside the current class
@@ -714,7 +685,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
             data = symbol_table.get(type);
         else
             data = symbol_table.get(className);
-        HashMap<String, String> args = new HashMap<String, String>();
+        LinkedHashMap<String, String> args = new LinkedHashMap<String, String>();
         args = data.getMethods().get(method).getArgs();
 
         // Check if args number is the same
@@ -725,6 +696,14 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
             exp_list  = Arrays.asList(n.f4.accept(this).split(","));
             if(exp_list.size() != args.size())
                 throw new SemanticError(); 
+            // If arguments have different type.
+            int i = 0;
+            
+            for(String type1: args.values()){
+                    if(!type1.equals(exp_list.get(i)) && !isSubType(exp_list.get(i), type1))
+                        throw new SemanticError();
+                    i++; 
+            }
         }
         String ret_type = data.getMethods().get(method).getType();
         return ret_type; 
@@ -758,7 +737,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     */
     public String visit(ExpressionTerm n) throws Exception {
         String expression = n.f1.accept(this);
-        return ", " + expression;
+        return "," + expression;
     }
 
     /** Clause n

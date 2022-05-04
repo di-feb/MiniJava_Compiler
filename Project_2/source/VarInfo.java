@@ -2,7 +2,7 @@ import visitor.GJDepthFirst;
 import syntaxtree.*;
 
 public class VarInfo {
-    private String type;        // Type of var
+    private String type;        // Type of the var
     private Integer offset;     // Offset of the var
 
     // Accessors
