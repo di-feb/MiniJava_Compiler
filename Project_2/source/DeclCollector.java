@@ -8,12 +8,34 @@ import visitor.GJDepthFirst;
 import syntaxtree.*;
 
 public class DeclCollector extends GJDepthFirst<String, Data>{
-    private Map <String, Data> symbol_table;
-    private String currMethod;
+    private Map <String, Data> symbol_table;    // The symbol table we constructed at the first iteration of the parse tree
+    private String currMethod;                  // Keeps the current method we are into
+    private int fieldOffset;                    // Keeps the current offset of the fields of the class className
+    private int methodOffset;                   // Keeps the current offset of the methods of the class className
 
     public DeclCollector(){
         currMethod = null;
-        this.symbol_table = new HashMap <String, Data>();
+        fieldOffset = 0;
+        methodOffset = 0;
+        symbol_table = new LinkedHashMap <String, Data>();
+    }
+
+    public void resetOffsets(){
+        fieldOffset = 0;
+        methodOffset = 0;
+    }
+
+    public void updateOffsets(String type, int mode){
+        if(mode == 0){
+            if(type.equals("int"))
+                fieldOffset += 4;
+            else if(type.equals("boolean"))
+                fieldOffset += 1;
+            else
+            fieldOffset += 8;
+        }
+        else
+            methodOffset += 8;    
     }
 
     public Map <String, Data> getSymbolTable(){
@@ -59,6 +81,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     public String visit(Goal n, Data data) throws Exception {
         // Accept at main class
         n.f0.accept(this, null);
+
         // When a production has a * it means that this production can appear
         // zero or more times. So for the  ( TypeDeclaration() )* f.e. we need to
         // iterate all the classes declarations. 
@@ -122,6 +145,9 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     }
     */
     public String visit(ClassDeclaration n, Data data) throws Exception {
+        // Reset the offsets
+        resetOffsets();
+
         // Keep the name of the class
         String name = n.f1.accept(this, null);
 
@@ -161,6 +187,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     }
     */
     public String visit(ClassExtendsDeclaration n, Data data) throws Exception {
+
         // Keep the name of the class
         String name = n.f1.accept(this, null);
         // Keep the name of the parent class
@@ -221,7 +248,8 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
             // and then pass the varInfo into the Data. 
             VarInfo vars_value = new VarInfo();
             vars_value.setType(var_type);
-            vars_value.setOffset(0); // We will deal with offset later!!!
+            vars_value.setOffset(fieldOffset); 
+            updateOffsets(var_type, 0);    // Update Offsets
 
             // Check for a redeclaration of that variable inside the same class.
             // We do not want that => Throw Semantic Error!
@@ -262,8 +290,10 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         // and then pass the varInfo into the Data. 
         MethodInfo method_value = new MethodInfo();
         method_value.setType(ret_type);
-        method_value.setOffset(0); // We will deal with offset later!!!
+        method_value.setOffset(methodOffset); 
+        updateOffsets(null, 1);
         data.getMethods().put(method_name, method_value);
+
         if(n.f4.present()) 
             // Pass the data to store the parameters.
             n.f4.accept(this, data);
@@ -274,10 +304,10 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
             int parent_args_size = symbol_table.get(parentClass).getMethods().get(method_name).getArgs().size();
             int args_size = data.getMethods().get(method_name).getArgs().size();
 
-            HashMap<String, String> args = new HashMap<String, String>();
+            LinkedHashMap<String, String> args = new LinkedHashMap<String, String>();
             args = data.getMethods().get(method_name).getArgs();
 
-            HashMap<String, String> parent_args = new HashMap<String, String>();
+            LinkedHashMap<String, String> parent_args = new LinkedHashMap<String, String>();
             parent_args = symbol_table.get(parentClass).getMethods().get(method_name).getArgs();
             
             // If arguments have different size.

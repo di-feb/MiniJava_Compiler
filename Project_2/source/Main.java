@@ -2,6 +2,7 @@ import syntaxtree.*;
 import visitor.*;
 import java.io.*;
 import java.util.Map;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 
 public class Main {
@@ -37,6 +38,44 @@ public class Main {
                 TypeChecker checker = new TypeChecker(collector.getSymbolTable());
                 root.accept(checker);
                 System.err.println(GREEN_BRIGHT + "Second iteration completed successfully." + ANSI_RESET);
+
+                boolean flag = false;
+                for (String className : collector.getSymbolTable().keySet()) {
+                    if(!flag){
+                        flag = true;
+                        continue;
+                    }
+                    Data data = collector.getSymbolTable().get(className);
+                    String parentName = data.getName();
+
+                    System.out.println("---- Class: " + className + " ----");
+                    System.out.println("-- Variables --");
+                    while(parentName != null){
+                        for(Iterator<Map.Entry<String, VarInfo>> it = data.getVars().entrySet().iterator(); it.hasNext(); ) {
+                            Map.Entry<String, VarInfo> entry = it.next();
+                            if(collector.getSymbolTable().get(parentName).getVars().containsKey(entry.getKey()))
+                                it.remove();
+                        }
+                        for(Iterator<Map.Entry<String, MethodInfo>> it = data.getMethods().entrySet().iterator(); it.hasNext(); ) {
+                            Map.Entry<String, MethodInfo> entry = it.next();
+                            if(collector.getSymbolTable().get(parentName).getMethods().containsKey(entry.getKey()))
+                                it.remove();
+                        }
+                        // data.getVars().entrySet().removeIf(entry -> (collector.getSymbolTable().get(parentName).getVars().containsKey(entry.getKey())));
+                        // data.getMethods().entrySet().removeIf(entry -> (collector.getSymbolTable().get(parentName).getMethods().containsKey(entry.getKey())));
+                        parentName = collector.getSymbolTable().get(parentName).getName();
+                    }
+                    for(String fieldName : data.getVars().keySet()){
+                        int offset = data.getVars().get(fieldName).getOffset();
+                        System.out.println(className + "." + fieldName + " : " + offset);
+                    }
+                    System.out.println("-- Methods --");
+                    for(String methodName :data.getMethods().keySet()){
+                        int offset = data.getMethods().get(methodName).getOffset();
+                        System.out.println(className + "." + methodName + " : " + offset);
+                    }
+                                         
+                }   
             }
             catch(SemanticError ex){
                 System.out.println(ex.getMessage());

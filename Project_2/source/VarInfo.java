@@ -7,7 +7,7 @@ public class VarInfo {
 
     // Accessors
     public String getType(){ return type; }
-    public Integer getOffset() { return offset; }
+    public int getOffset() { return offset; }
 
     // Mutators
     public void setType(String _type_){ this.type = _type_; }
