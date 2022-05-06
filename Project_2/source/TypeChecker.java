@@ -40,6 +40,8 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         return false;
     }
 
+    // Check if a variable, method, or class has been declared
+    // Throw SemanticError if not!
     private void CheckForDeclaration(String value, String classname, int mode) throws Exception {
         Boolean varFlag = false;
         Boolean methodFlag = false;
@@ -74,6 +76,10 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         }
     }
 
+    // Returns true if a var has been declared
+    // false if not.
+    //  We have already push any inherited method or field to the child 
+    // so we dont need to check for redaclaration recursivly
     private boolean CheckForVarDeclaration(String var, String classname){
         Data data = symbol_table.get(classname);
         if(data == null) return false; 
@@ -89,6 +95,17 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         }
         return false;
     }
+
+    private boolean CheckForMethodDeclaration(String method, String classname){      
+        if (symbol_table.get(classname).getMethods().containsKey(method))
+            return true;        
+        return false;
+    }
+
+    private boolean CheckForClassDeclaration(String class_){
+        return symbol_table.containsKey(class_);
+    }
+
     // Get the type of the variable.
     // Precedence: method variables, method args > classe's fields
     private String getVarType(String var, String classname){
@@ -108,15 +125,6 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
 
 
     
-    private boolean CheckForMethodDeclaration(String method, String classname){      
-        if (symbol_table.get(classname).getMethods().containsKey(method))
-            return true;        
-        return false;
-    }
-
-    private boolean CheckForClassDeclaration(String class_){
-        return symbol_table.containsKey(class_);
-    }
     /** Goal
     * f0 -> MainClass()
     * f1 -> ( TypeDeclaration() )*
@@ -150,7 +158,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         // Keep the name of the "main" class
         className = n.f1.accept(this);
 
-        // Go down through the parse Tree
+        // Go down through the parse Tree for checking
         for( int i = 0; i < n.f14.size(); i++ )
             n.f14.elementAt(i).accept(this);
 
@@ -183,7 +191,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         // Keep the name of the "main" class
         className = n.f1.accept(this);
 
-        // Go down through the parse Tree
+        // Go down through the parse Tree for checking
         for( int i = 0; i < n.f3.size(); i++ )
             n.f3.elementAt(i).accept(this);
 
@@ -216,7 +224,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         if(!symbol_table.containsKey(parent_name))
             throw new SemanticError();
 
-        // Go down through the parse Tree
+        // Go down through the parse Tree for checking
         for( int i = 0; i < n.f5.size(); i++ )
             n.f5.elementAt(i).accept(this);
 
@@ -258,8 +266,11 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         }
     */
     public String visit(MethodDeclaration n) throws Exception {
+        // Get methods return type.
         String method_RetType = n.f1.accept(this);  
 
+        // Get methods name and update methodName just to 
+        // know at what method we are into.
         String method_name = n.f2.accept(this); 
         methodName = method_name;
 
@@ -278,7 +289,8 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         for( int i = 0; i < n.f8.size(); i++ )
             n.f8.elementAt(i).accept(this);
         
-        // The return type of the return statement need to match with the return type of this method.
+        // The return type of the return statement need to match with 
+        // the return type of this method or a sub type of it.
         // If it does not => Throw Semantic Error!
         String value_RetType = n.f10.accept(this);
         if(!(value_RetType).equals(method_RetType) && !isSubType(value_RetType, method_RetType)) // μπορει να ειναι και υποτυπος.
@@ -292,7 +304,8 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     * f0 -> FormalParameter()
     * f1 -> FormalParameterTail()
     */
-    // It will go and fill up recursivly the args field of the method_info field of the Data class
+
+    // Go through the parse Tree we have already collect the data
     public String visit(FormalParameterList n) throws Exception {
         n.f0.accept(this);   
         n.f1.accept(this);   
@@ -390,6 +403,8 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     *       | WhileStatement()
     *       | PrintStatement()
     */
+
+    // Go through the parse Tree
     public String visit(Statement n) throws Exception {
         n.f0.accept(this);
         return null; 
@@ -402,6 +417,8 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
 
     { f1 }
     */
+
+    // Go through the parse Tree
     public String visit(Block n) throws Exception {
         for( int i = 0; i < n.f1.size(); i++ )
             n.f1.elementAt(i).accept(this);
@@ -424,7 +441,8 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
         CheckForDeclaration(var, className, 0);
         String idType = getVarType(var, className);
         
-        // Check if the type of the expression match the type of the identifier.
+        // Check if the type of the expression match the type of the identifier
+        // or a sub type of it.
         // If not => Throw Semantic Error!
         String exp_type = n.f2.accept(this);
         if(!exp_type.equals(idType) && !isSubType(exp_type, idType))
@@ -446,9 +464,11 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
 
     */
     public String visit(ArrayAssignmentStatement n) throws Exception {
+        // Check for delcaration
         String id = n.f0.accept(this);
         CheckForDeclaration(id, className, 4);
         
+        // The type of the f0 must be an array type
         String idType = getVarType(id, className);
         if(idType == null || (!idType.equals("int[]") && !idType.equals("boolean[]")))
             throw new SemanticError();
@@ -544,6 +564,8 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     *       | MessageSend()
     *       | Clause()
     */
+
+    // Go through the parse Tree
     public String visit(Expression n) throws Exception {
         return n.f0.accept(this);
     }
@@ -553,7 +575,9 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     * f1 -> "&&"
     * f2 -> Clause()
     */
+
     public String visit(AndExpression n) throws Exception {
+        // Clause should be type boolean
         if(!n.f0.accept(this).equals("boolean") || !n.f2.accept(this).equals("boolean"))
             throw new SemanticError();
         return "boolean";
@@ -565,6 +589,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     * f2 -> PrimaryExpression()
     */
     public String visit(CompareExpression n) throws Exception {
+        // Exp should be type int
         if(!n.f0.accept(this).equals("int") || !n.f2.accept(this).equals("int"))
             throw new SemanticError();
         return "boolean";
@@ -578,6 +603,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     f0 + f2
     */
     public String visit(PlusExpression n) throws Exception {
+        // Exp should be type int
         if(!n.f0.accept(this).equals("int") || !n.f2.accept(this).equals("int"))
             throw new SemanticError();
         return "int";
@@ -591,6 +617,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     f0 - f2
     */
     public String visit(MinusExpression n) throws Exception {
+        // Exp should be type int
         if(!n.f0.accept(this).equals("int") || !n.f2.accept(this).equals("int"))
             throw new SemanticError();
         return "int";   
@@ -604,6 +631,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     f0 * f2
     */
     public String visit(TimesExpression n) throws Exception {
+        // Exp should be type int
         if(!n.f0.accept(this).equals("int") || !n.f2.accept(this).equals("int"))
             throw new SemanticError();
         return "int";
@@ -713,6 +741,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     * f0 -> Expression()
     * f1 -> ExpressionTail()
     */
+    // It will return a string like: int,boolean,Tree
         public String visit(ExpressionList n) throws Exception {
             String expression = n.f0.accept(this);   
             String expression_tail = n.f1.accept(this);   
@@ -800,6 +829,7 @@ public class TypeChecker extends GJNoArguDepthFirst< String >{
     /** ThisExpression
     * f0 -> "this"
     */
+    // Return the name of the class we are into
     public String  visit(ThisExpression n) throws Exception {
         return className;
     }

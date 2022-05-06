@@ -53,6 +53,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         return false;
     }
 
+    // Returns the parent of an inherited method
     private String getParentOfInheritedMethod(String method, Data data){
         String parentClass = data.getName();
         while(parentClass != null){
