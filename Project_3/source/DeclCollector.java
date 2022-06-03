@@ -2,7 +2,6 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 import visitor.GJDepthFirst;
 import syntaxtree.*;
-import java.util.Queue;
 import java.util.LinkedList;
 @interface CaseOfMessageSendOnly{};
 
@@ -19,6 +18,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
 
     public DeclCollector(){
         currMethod = null;
+        className = null;
         fieldOffset = 0;
         methodOffset = 0;
         symbol_table = new LinkedHashMap <String, Data>();
@@ -80,7 +80,6 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         return null; 
     }
 
-    @CaseOfMessageSendOnly
     /** MainClass
     * f1 -> Identifier() { void main ( String[]
     * f11 -> Identifier()
@@ -225,7 +224,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
 
             data.getVars().put(var_name, vars_value);
         }
-        this.vars.put(var_name, var_type);
+        vars.put(var_name, var_type);
 
         return null;
     }  
@@ -248,7 +247,6 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         String ret_type = n.f1.accept(this, null);   
         String method_name = n.f2.accept(this, null); 
         currMethod = method_name;
-
         // Make a MethodInfo to store the info you get,
         // and then pass the methodInfo into the Data.
         MethodInfo method_value = new MethodInfo();
@@ -271,6 +269,8 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         // Pass data down to parse tree to collect the info 
         for( int i = 0; i < n.f7.size(); i++ )
             n.f7.elementAt(i).accept(this, data);
+        for( int i = 0; i < n.f8.size(); i++ )
+            n.f8.elementAt(i).accept(this, data);
         currMethod = null;
         return null;
     }
@@ -296,7 +296,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         String name = n.f1.accept(this, null);
         
         data.getMethods().get(currMethod).getArgs().put(name, type);
-        this.vars.put(name, type);
+        vars.put(name, type);
         return null;
     }
 
@@ -375,21 +375,20 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         return n.f0.toString();
     }
 
-    @CaseOfMessageSendOnly
-    /*  AssignmentStatement:   f0 -> Identifier() = f2 -> Expression(); */
-    public String visit(AssignmentStatement node, Data data)throws Exception{ 
-        String left = node.f0.accept(this, null);
-        String right = node.f2.accept(this, null);
+    // @CaseOfMessageSendOnly
+    // /*  AssignmentStatement:   f0 -> Identifier() = f2 -> Expression(); */
+    // public String visit(AssignmentStatement n, Data data) throws Exception { 
+    //     String left = n.f0.accept(this, null);
+    //     String right = n.f2.accept(this, null);
 
-        /* in case of an assignment, a parent class reference might now point to a child class object, 
-           so adjust the variables table to reflect that, in order for the right method to be executed in case of a message send*/ 
-        if(right != null)
-            this.vars.put(left, right);
+    //     /* in case of an assignment, a parent class reference might now point to a child class object, 
+    //        so adjust the variables table to reflect that, in order for the right method to be executed in case of a message send*/ 
+    //     if(right != null)
+    //         this.vars.put(left, right);
 
-        return null;
-    }
+    //     return null;
+    // }
 
-    @CaseOfMessageSendOnly
      /** MessageSend
     * f0 -> PrimaryExpression()
     * f1 -> "."
@@ -402,13 +401,10 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     */
     public String visit(MessageSend n, Data data) throws Exception {
         messageSendQueue.addLast(n.f0.accept(this, null));
-        n.f4.accept(this, null); // Check for messageSend inside args
+        if(n.f4.present()) n.f4.accept(this, null); // Check for messageSend inside args
         return className; // A messageSend can contains inside another messageSend
     }
 
-    
-
-    @CaseOfMessageSendOnly
     /** PrimaryExpression
     * f0 -> IntegerLiteral()
     *       | TrueLiteral()
@@ -419,60 +415,25 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     *       | AllocationExpression()
     *       | BracketExpression()
     */
-    public String visit(PrimaryExpression n, Data data)throws Exception{
+    public String visit(PrimaryExpression n, Data data) throws Exception{
         int num = n.f0.which;
-        System.out.println(num);
-        String expr = n.f0.accept(this, null);
+        String exp = n.f0.accept(this, null);
+        
+        if(num == 3)
+            return vars.get(exp);
+            
         // in case of an identifier, return the data type
-        if(num == 3){
-            return this.vars.get(expr);
-        }
-        return expr;
+        return exp;
     }
 
-    @CaseOfMessageSendOnly
-     /** IntegerLiteral
-    * f0 -> <INTEGER_LITERAL>
-    */
-    public String visit(IntegerLiteral n) throws Exception {
-        return null;
-    }
-
-    @CaseOfMessageSendOnly
-    /** TrueLiteral
-    * f0 -> "true"
-    */
-    public String visit(TrueLiteral n) throws Exception {
-        return null;
-    }
-
-    @CaseOfMessageSendOnly
-    /** FalseLiteral
-    * f0 -> "false"
-    */
-    public String visit(FalseLiteral n) throws Exception {
-        return null;
-    }
-
-    @CaseOfMessageSendOnly
     /** ThisExpression
     * f0 -> "this"
     */
     // Return the name of the class we are into
-    public String visit(ThisExpression n) throws Exception {
+    public String visit(ThisExpression n, Data data) throws Exception {
         return className;
     }
 
-    @CaseOfMessageSendOnly
-     /** ArrayAllocationExpression
-    * f0 -> BooleanArrayAllocationExpression()
-    *       | IntegerArrayAllocationExpression()
-    */
-    public String visit(ArrayAllocationExpression n) throws Exception {
-        return null;
-    }
-
-    @CaseOfMessageSendOnly
     /** AllocationExpression
     * f0 -> "new"
     * f1 -> Identifier()
@@ -481,11 +442,10 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
 
     new f1()
     */
-    public String visit(AllocationExpression n) throws Exception {
+    public String visit(AllocationExpression n, Data data) throws Exception {
         return n.f1.accept(this, null);
     }
 
-    @CaseOfMessageSendOnly
     /*BracketExpression:    ( f1 -> Expression() )*/
     public String visit(BracketExpression n, Data data)  throws Exception{
         return n.f1.accept(this, null);

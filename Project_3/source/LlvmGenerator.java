@@ -4,10 +4,12 @@ import visitor.GJNoArguDepthFirst;
 import java.util.Queue;
 import java.util.LinkedList;
 import syntaxtree.*;
+import java.io.*;
 
 public class LlvmGenerator extends GJNoArguDepthFirst< String >{
-    private static int registerCounter = 0;         // A counter for the register we produced
-    private static int labelCounter = 0;            // A counter for the labels
+    private static int registerCounter;             // A counter for the register we produced
+    private static int labelCounter;                // A counter for the labels
+    private BufferedWriter filename;                // The filename to write the llvm code
     private String className;                       // The className of the class we are into 
     private String methodName;                      // The methodName of the class we are into 
     private Map <String, Data> symbol_table;        // The symbol table we construct later with the DeclCollector
@@ -15,12 +17,21 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
     private LinkedList<String> messageSendQueue;    // A queue that holds the classNames, or object names for every message sent.
 
     // Constructor
-    LlvmGenerator(Map <String, Data> symbol_table, LinkedList<String> queue){
-        this.symbol_table = symbol_table;
-        this.messageSendQueue = queue;
-        this.ids = new LinkedHashMap <String, RegInfo>();
-        this.className = null;
-        this.methodName = null;
+    LlvmGenerator(BufferedWriter fout, Map <String, Data> symboltable, LinkedList<String> queue){
+        ids = new LinkedHashMap <String, RegInfo>();
+        filename = fout;
+        symbol_table = symboltable;
+        messageSendQueue = queue;
+        className = null;
+        methodName = null;
+        registerCounter = 0;
+        labelCounter = 0;
+    }
+
+    private void printIntoLlFile(String str){
+        try{ filename.write(str + "\n"); }
+
+		catch(IOException ex){ System.err.println(ex.getMessage()); }
     }
 
     private int getRegisterCounter() {
@@ -57,7 +68,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
 
     // Create a new label update label counter.
     String createLabel(String typeOflabel){
-        return "%" + typeOflabel + labelCounter++;
+        return "%" + typeOflabel + String.valueOf(labelCounter++);
     }
 
     // Find the register of an identifier if exists.
@@ -76,16 +87,16 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         String new_register = createRegister();
 
         // set a new pointer to that field
-        System.out.println(new_register + " = getelementptr i8, i8* %this, i32 " + offset + "\t");
+        printIntoLlFile(new_register + " = getelementptr i8, i8* %this, i32 " + offset + "\t");
 
         // if the size of the field is different from i8, cast it to the right one
         if(!"i8".equals(type))
-        System.out.println("\t" + createRegister() + " = bitcast i8* " + new_register + " to " + type + "*\t");
+            printIntoLlFile("\t" + createRegister() + " = bitcast i8* " + new_register + " to " + type + "*\t");
 
         // if we are into a right value expression aka want the content of the field:
         String new_type;
         if(rvalue){
-            System.out.println(createRegister() + " = load " + type + ", " + type + "* %"  + (getRegisterCounter()-2));
+            printIntoLlFile(createRegister() + " = load " + type + ", " + type + "* %"  + (getRegisterCounter()-2));
             new_type = type + "*";
             type = new_type;
         }
@@ -110,10 +121,9 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
             return "i8*";
     }
 
-    // Check if the types of an assigment are similar.
+    // Check if the types of an assignment are similar.
     RegInfo checkTypeMatching(String leftType, String leftReg, String rightType){
         if(!leftType.equals(rightType + "*")){
-            System.out.println(createRegister() + " = bitcast " + leftType + " " + leftReg + " to " + rightType + "*\t");
             leftType = rightType + "*";            
             leftReg = "%_" + (getRegisterCounter()-1);
         }
@@ -122,22 +132,20 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
 
     // Prints the code for checking if the index is oob
     void checkOOB(String index, String length, boolean booleanArray){
-        if(!booleanArray)
-            System.out.println(
-                createRegister() + " = icmp slt i32 " + index + ", 0\t"
-                + createRegister() + " = icmp slt i32 " + index + ", " + length +"\t"
-                + createRegister() + " = xor i1 %_" + (getRegisterCounter()-3) + ", %_" + (getRegisterCounter()-2) +"\t" 
-                +"br i1 %_" + (getRegisterCounter()-1) + ", label %" + createLabel("oob") + ", label %" + createLabel("oob") + "\n" + createLabel("oob") + ":\n\t" 
-                +"call void @throw_oob()\n\tbr label %" + createLabel("oob") + "\n\n" + createLabel("oob") + ":"
-            ); 
-        else
-            System.out.println(
-                createRegister() + " = icmp slt i1 " + index + ", 0\t"
-                + createRegister() + " = icmp slt i1 " + index + ", " + length +"\t"
-                + createRegister() + " = xor i1 %_" + (getRegisterCounter()-3) + ", %_" + (getRegisterCounter()-2) +"\t" 
-                +"br i1 %_" + (getRegisterCounter()-1) + ", label %" + createLabel("oob") + ", label %" + createLabel("oob") + "\n" + createLabel("oob") + ":\t" 
-                +"call void @throw_oob()\tbr label %" + createLabel("oob") + "\n" + createLabel("oob") + ":"
-            ); 
+        if(!booleanArray){
+            printIntoLlFile("\t" + createRegister() + " = icmp slt i32 " + index + ", 0");
+            printIntoLlFile("\t" + createRegister() + " = icmp slt i32 " + index + ", " + length +"\t");
+            printIntoLlFile("\t" + createRegister() + " = xor i1 %_" + (getRegisterCounter()-3) + ", %_" + (getRegisterCounter()-2) +"\t" );
+            printIntoLlFile("\tbr i1 %_" + (getRegisterCounter()-1) + ", label %" + createLabel("oob") + ", label %" + createLabel("oob") + "\n" + createLabel("oob") + ":"); 
+            printIntoLlFile("\tcall void @throw_oob()\n\tbr label %" + createLabel("oob") + "\n\n" + createLabel("oob") + ":");
+        }
+        else{
+            printIntoLlFile("\t" + createRegister() + " = icmp slt i1 " + index + ", 0");
+            printIntoLlFile("\t" + createRegister() + " = icmp slt i1 " + index + ", " + length +"\t");
+            printIntoLlFile("\t" + createRegister() + " = xor i1 %_" + (getRegisterCounter()-3) + ", %_" + (getRegisterCounter()-2) +"\t" );
+            printIntoLlFile("\tbr i1 %_" + (getRegisterCounter()-1) + ", label %" + createLabel("oob") + ", label %" + createLabel("oob") + "\n" + createLabel("oob") + ":"); 
+            printIntoLlFile("\tcall void @throw_oob()\n\tbr label %" + createLabel("oob") + "\n\n" + createLabel("oob") + ":");
+        }
 
     }
 
@@ -145,15 +153,15 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
     // returns a string "type, register"
     String loadArraysElement(String register, String index, boolean booleanArray){
         if(booleanArray){
-            System.out.println(createRegister() + " = bitcast i8* %_" + (getRegisterCounter() - 1) + " to i1*");
-            System.out.println(createRegister() + " = getelementptr i1, i1* %_" + (getRegisterCounter()-2) + ", i1 " + index);
-            System.out.println(createRegister() + " = load i1, i1* %_" + (getRegisterCounter()-2 + "\t"));
+            printIntoLlFile("\t "+ createRegister() + " = bitcast i8* %_" + (getRegisterCounter() - 1) + " to i1*");
+            printIntoLlFile("\t "+ createRegister() + " = getelementptr i1, i1* %_" + (getRegisterCounter()-2) + ", i1 " + index);
+            printIntoLlFile("\t "+ createRegister() + " = load i1, i1* %_" + (getRegisterCounter()-2 + "\t"));
             return "i1 %_" + (getRegisterCounter()-1);
         }
         else{
-            System.out.println(createRegister() + " = bitcast i8* %_" + (getRegisterCounter() - 1) + " to i32*");
-            System.out.println(createRegister() + " = getelementptr i32, i32* %_" + (getRegisterCounter()-2) + ", i32 " + index);
-            System.out.println(createRegister() + " = load i32, i32* %_" + (getRegisterCounter()-2 + "\t"));
+            printIntoLlFile("\t "+ createRegister() + " = bitcast i8* %_" + (getRegisterCounter() - 1) + " to i32*");
+            printIntoLlFile("\t "+ createRegister() + " = getelementptr i32, i32* %_" + (getRegisterCounter()-2) + ", i32 " + index);
+            printIntoLlFile("\t "+ createRegister() + " = load i32, i32* %_" + (getRegisterCounter()-2 + "\t"));
             return "i32 %_" + (getRegisterCounter()-1);
         }
 
@@ -169,7 +177,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         // else => its is not loaded and we need to load it
         if(!rvalue){
             // always load from a generic type i8* beacuse we dont know the actual type yet
-            System.out.println(createRegister() + " = load i8*, i8** " + reg + "\t");
+            printIntoLlFile(createRegister() + " = load i8*, i8** " + reg + "\t");
             length = loadArraysElement(reg, index, booleanArray);
         }
         else
@@ -181,17 +189,16 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
 
     void storeIntoArray(String reg, String type, boolean booleanArray, String expr, String index){
         if(booleanArray){
-            System.out.println(createRegister() + " = load i8*, " + type + " " + reg);
-            System.out.println(createRegister() + " = bitcast i8* %_" + (getRegisterCounter() -2) + " to i1*");
-            System.out.println(createRegister() + " = getelementptr i1, i1* %_" + (getRegisterCounter() -2) + " , i1 " + index);
-            System.out.println("\tstore " + expr + ", i1* %_" + (getRegisterCounter() -1));
+            printIntoLlFile("\t "+ createRegister() + " = load i8*, " + type + " " + reg);
+            printIntoLlFile("\t "+ createRegister() + " = bitcast i8* %_" + (getRegisterCounter() -2) + " to i1*");
+            printIntoLlFile("\t "+ createRegister() + " = getelementptr i1, i1* %_" + (getRegisterCounter() -2) + " , i1 " + index);
+            printIntoLlFile("\tstore " + expr + ", i1* %_" + (getRegisterCounter() -1));
         }
         else{
-            System.out.println(createRegister() + " = load i8*, " + type + " " + reg);
-            System.out.println(createRegister() + " = bitcast i8* %_" + (getRegisterCounter() -2) + " to i32*");
-            System.out.println(createRegister() + " = getelementptr i32, i32* %_" + (getRegisterCounter() -2) + " , i32 " + index);
-            System.out.println("\tstore " + expr + ", i32* %_" + (getRegisterCounter() -1));
-            
+            printIntoLlFile("\t "+ createRegister() + " = load i8*, " + type + " " + reg);
+            printIntoLlFile("\t "+ createRegister() + " = bitcast i8* %_" + (getRegisterCounter() -2) + " to i32*");
+            printIntoLlFile("\t "+ createRegister() + " = getelementptr i32, i32* %_" + (getRegisterCounter() -2) + " , i32 " + index);
+            printIntoLlFile("\tstore " + expr + ", i32* %_" + (getRegisterCounter() -1));
         }
     }
 
@@ -200,7 +207,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
     String getCorrectIndex(String index){
         // Check if we get an integer or a register
         if( index.startsWith("%")){ // if we get a register, create a new one, add one to it
-            System.out.println(createRegister() + " = add i32 " + index + ", 1");
+            printIntoLlFile(createRegister() + " = add i32 " + index + ", 1");
             return "%_" + (getRegisterCounter() - 1);
         }
         // cast the string index to int, add one to it, and cast it again to string
@@ -217,9 +224,9 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         int counter = 0;
         for(Map.Entry<String, String> entry : args.entrySet()){
             counter++;
-            args_as_string += convertType(entry.getValue());
-            if(args.size() > counter )
+            if(args.size() >= counter )
                 args_as_string += ", ";
+            args_as_string += convertType(entry.getValue());
         }
         return args_as_string;
     }
@@ -233,7 +240,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         for(Map.Entry<String, String> entry : args.entrySet()){
             String currArg = "";
             counter++;
-            currArg = convertType(entry.getValue()) + " $." + entry.getKey();
+            currArg = convertType(entry.getValue()) + " %." + entry.getKey();
             if(args.size() > counter )
                 currArg += ", ";
             args_as_string += currArg;
@@ -263,13 +270,13 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         for(Map.Entry<String, Data> entry : symbol_table.entrySet()){
             String className = entry.getKey();
             Map<String, MethodInfo> methods = entry.getValue().getMethods();
-            System.out.println("@." + className + "_vtable = global [" + methods.size() + " x i8*] [" + getMethods(className, methods) + "]\t");
+            printIntoLlFile("@." + className + "_vtable = global [" + methods.size() + " x i8*] [" + getMethods(className, methods) + "]\t");
         }
     }
 
     // Print some external methods.
     void includeFuncts(){
-        System.out.println("\n"
+        printIntoLlFile("\n"
             + "declare i8* @calloc(i32, i32)\n"
             + "declare i32 @printf(i8*, ...)\n"
             + "declare void @exit(i32)\n\n"
@@ -293,11 +300,12 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
     * f1 -> ( TypeDeclaration() )*
     */
     public String visit(Goal n) throws Exception {
-        className = n.f0.accept(this);
         // Declare a public v-table 
         delcareVtable();
         // Declare some functions
         includeFuncts();
+
+        className = n.f0.accept(this);
 
         
         for( int i = 0; i < n.f1.size(); i++ )
@@ -322,7 +330,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
     public String visit(MainClass n) throws Exception {
         // Keep the name of the "main" class
         className = n.f1.accept(this);
-        System.out.println("define i32 @main() {\n\t"); // define
+        printIntoLlFile("define i32 @main() {\n\t"); // define
 
         // Go down through the parse Tree
         for( int i = 0; i < n.f14.size(); i++ )
@@ -330,7 +338,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
 
         for( int i = 0; i < n.f15.size(); i++ )
             n.f15.elementAt(i).accept(this);
-
+        printIntoLlFile("\tret i32 0\n}");
         return null;
     }
 
@@ -399,7 +407,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         // Keep the name of the var
         String name = n.f1.accept(this);
 
-        System.out.println("\n\t%" + name + " = alloca " + var_type + "\n\t"); // alloca
+        printIntoLlFile("\t%" + name + " = alloca " + var_type); // alloca
         RegInfo info = new RegInfo("%" + name, var_type);
         ids.put(name, info); // keep the info of that variable
         return null;
@@ -430,12 +438,12 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
 
         LinkedHashMap<String, String> args = symbol_table.get(className).getMethods().get(methodName).getArgs();
         if(args != null){
-            System.out.println("\ndefine " + method_RetType + " @" + className + "." + methodName + "(" + convertArgsForDefinition(args) + "){");
+            printIntoLlFile("define " + method_RetType + " @" + className + "." + methodName + "(" + convertArgsForDefinition(args) + "){");
             for(Map.Entry<String, String> entry : args.entrySet()){
                 String key = entry.getKey();                        // Get the name of the argument 
                 String value = convertType(entry.getValue());       // Get the type of the argument at a llvm form
-                System.out.println("%" + key + " = alloca " + value + "\t");    // alloca
-                System.out.println("store " + value + " %." + key + ", " + value + "* %" + key + "\t"); // store
+                printIntoLlFile("\t%" + key + " = alloca " + value + "\t");    // alloca
+                printIntoLlFile("\tstore " + value + " %." + key + ", " + value + "* %" + key); // store
 
                 // store the variable into ids.
                 RegInfo info = new RegInfo("%" + key, value);
@@ -452,8 +460,8 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
             n.f8.elementAt(i).accept(this);
         
         // Get type of returned value at llvm form.
-        String value_RetType = convertType(n.f10.accept(this));
-        System.out.println("ret " + value_RetType + "\n}\n");
+        String value_RetType = n.f10.accept(this);
+        printIntoLlFile("\tret " + value_RetType + "\n}\n");
         
         methodName = null;
         return null;
@@ -610,7 +618,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         RegInfo reginfo = checkTypeMatching(lType, lreg, rType);
         lType = reginfo.getType();
         lreg = reginfo.getRegister();
-        System.out.println("store " + rType + " " + rvalue +  ", " + lType + " " + lreg);
+        printIntoLlFile("\tstore " + rType + " " + rvalue +  ", " + lType + " %" + lid);
  
         return null;
     }
@@ -676,18 +684,18 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         String if_2 = createLabel("if");
         
         //if(condition)
-        System.out.println("\n\t\tbr " + cond + ", label %" + if_0 + ", label %" + if_1 + "\n");
-        System.out.println("if0:");
+        printIntoLlFile("\tbr " + cond + ", label " + if_0 + ", label " + if_1);
+        printIntoLlFile(if_0 + ":");
 
         // Do that
         n.f4.accept(this);
-        System.out.println("\n\t\tbr label " + if_2 + "\n\n");
-        System.out.println("if1:");
+        printIntoLlFile("\tbr label " + if_2);
+        printIntoLlFile(if_1 + ":");
 
         // Else do this
         n.f6.accept(this);
-        System.out.println("\n\t\tbr label " + if_2 + "\n\n");
-        System.out.println("if2:");
+        printIntoLlFile("\tbr label " + if_2);
+        printIntoLlFile(if_2 + ":");
 
         return null;
     }
@@ -705,19 +713,19 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
     */
     public String visit(WhileStatement n) throws Exception {
         // Make the labels 
-        String while_0 = createLabel("if");
-        String while_1 = createLabel("if");
+        String while_0 = createLabel("loop");
+        String while_1 = createLabel("loop");
 
         // Go to while loop to check the condition
-        System.out.println("\n\t\tbr label %" + while_0 + "\n");
-        System.out.println( while_0 + ":\n\t");
+        printIntoLlFile("\tbr label " + while_0);
+        printIntoLlFile(while_0 + ":");
 
         // Get the condition
         String cond = n.f2.accept(this);
 
         // Go to the loop to execute the statement
-        System.out.println("\n\t\tbr " + cond + ", label %" + while_0 + ", label %" + while_1 + "\n");
-        System.out.println("while0:");
+        printIntoLlFile("\tbr " + cond + ", label " + while_0 + ", label " + while_1);
+        printIntoLlFile(while_1 + ":");
 
         // Get the statement
         n.f4.accept(this);
@@ -727,7 +735,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
 
 
     /** PrintStatement 
-    * f0 -> "System.out.println"
+    * f0 -> "printIntoLlFile"
     * f1 -> "("
     * f2 -> Expression()
     * f3 -> ")"
@@ -742,9 +750,9 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
 
         // Find about the type. Is either boolean or integer.
         if(type.equals("i1"))
-            System.out.println("\n\tcall void (" + type + ") @print_bool(" + expr +")");
+            printIntoLlFile("\tcall void (" + type + ") @print_bool(" + expr +")");
         else
-            System.out.println("\n\tcall void (" + type + ") @print_int(" + expr +")");
+            printIntoLlFile("\tcall void (" + type + ") @print_int(" + expr +")");
 
         return null;
 }
@@ -764,10 +772,6 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
 
     // Go through the parse Tree
     public String visit(Expression n) throws Exception {
-        // if(n.f0.which == 7){
-        //     String[] strs = n.f0.accept(this).split(" ");
-        //     return strs[1] + " " + strs[2];
-        // }
         return n.f0.accept(this);
     }
 
@@ -779,24 +783,24 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
 
     public String visit(AndExpression n) throws Exception {
         // Make the labels 
-        String and_0 = createLabel("and");
-        String and_1 = createLabel("and");
+        String and_0 = createLabel("andclause");
+        String and_1 = createLabel("andclause");
 
         // If the first clause if false dont even check the second one.
         // Just jump into the next lebal.
         String clause_1 = n.f0.accept(this);
         String clause_1_reg = clause_1.split(" ")[1];   // get the register
-        System.out.println("\\t\tbr " + clause_1 + ", label %" + and_0 + ", label %" + and_1 + "\n");
-        System.out.println(and_0 +":");
-        System.out.println("\t\tbr label %" + and_1 + "\n");
-        System.out.println(and_1 +":");
+        printIntoLlFile("\tbr " + clause_1 + ", label " + and_0 + ", label " + and_1);
+        printIntoLlFile(and_0 +":");
+        printIntoLlFile("\tbr label " + and_1);
+        printIntoLlFile(and_1 +":");
 
         // Get the second clause
         String clause_2 = n.f2.accept(this);
         String clause_2_reg = clause_2.split(" ")[1];   // get the register
 
         // Use phi to go to the correct label according to the values of the clauses.
-        System.out.println("\n\t" + createRegister() + " = phi i1 [" + clause_2_reg + ", %" + and_0 + "]," + "[" + clause_1_reg + ", %" + and_1 + "]");
+        printIntoLlFile("\t" + createRegister() + " = phi i1 [" + clause_2_reg + ", %" + and_0 + "]," + "[" + clause_1_reg + ", %" + and_1 + "]");
 
         return "i1 %_" + (getRegisterCounter()-1);
     }
@@ -811,7 +815,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         String left_expr = n.f0.accept(this);
 
         String right_expr = n.f2.accept(this);
-        System.out.println("\t" + createRegister() + " = icmp slt " + left_expr + ", " + right_expr.split(" ")[1]); 
+        printIntoLlFile("\t" + createRegister() + " = icmp slt " + left_expr + ", " + right_expr.split(" ")[1]); 
         return "i1 %_" + (getRegisterCounter() - 1);
     }
 
@@ -826,7 +830,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         String left_expr = n.f0.accept(this);
 
         String right_expr = n.f2.accept(this);
-        System.out.println("\t" +createRegister() + " = + " + left_expr + ", " + right_expr.split(" ")[1]); 
+        printIntoLlFile("\t" +createRegister() + " = add " + left_expr + ", " + right_expr.split(" ")[1]); 
         return "i32 %_" + (getRegisterCounter() - 1);
     }
 
@@ -842,7 +846,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         String left_expr = n.f0.accept(this);
 
         String right_expr = n.f2.accept(this);
-        System.out.println("\t" + createRegister() + " = - " + left_expr + ", " + right_expr.split(" ")[1]); 
+        printIntoLlFile("\t" + createRegister() + " = sub " + left_expr + ", " + right_expr.split(" ")[1]); 
         return "i32 %_" + (getRegisterCounter() - 1); 
     }
 
@@ -857,7 +861,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         String left_expr = n.f0.accept(this);
 
         String right_expr = n.f2.accept(this);
-        System.out.println("\t" + createRegister() + " = * " + left_expr + ", " + right_expr.split(" ")[1]); 
+        printIntoLlFile("\t" + createRegister() + " = mul " + left_expr + ", " + right_expr.split(" ")[1]); 
         return "i32 %_" + (getRegisterCounter() - 1);
     }
 
@@ -916,45 +920,43 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         String exp = n.f0.accept(this);
         String methodType;
         int methodOffset;
-        // Geth method name, retType and offset
-        String methodName = n.f2.accept(this);
 
+        // Get method name, retType and offset
+        String methodName = n.f2.accept(this);
         String obj = messageSendQueue.removeFirst();
-        System.out.println(obj);
         methodType = convertType(symbol_table.get(obj).getMethods().get(methodName).getType());
         methodOffset = symbol_table.get(obj).getMethods().get(methodName).getOffset();
 
-        String args = ""; // For method argument
+        printIntoLlFile("\t" + createRegister() + " = bitcast " + exp + " to i8***"); 
+        printIntoLlFile("\t" + createRegister() + " = load i8**, i8*** %_" + (getRegisterCounter()-2));
+        printIntoLlFile("\t" + createRegister() + " = getelementptr i8*, i8** %_" + (getRegisterCounter()-2) + ", i32 " + methodOffset);
+        printIntoLlFile("\t" + createRegister() + " = load i8*, i8** %_" + (getRegisterCounter()-2));
+
+        String args = "";  // For method argument
         String onlyTypes = ""; // Holds only the type of the arguments
         if(n.f4.present()){
-            args = n.f4.accept(this);
+            args = exp + ",";
+            args += n.f4.accept(this);
             String[] argsInfos = args.split(",");
-
-            // for(int i = 0; i < messageSendQueue.size(); i++){
-            //     // System.out.println(messageSendQueue.get );
-            // }
+            
         // always one argument (this)
             if(argsInfos.length == 1)
-                onlyTypes = "(i8*)";
+                onlyTypes = "i8*";
             else{
                 for(int i = 0; i < argsInfos.length; i++){
-                    RegInfo regInfo = ids.get(argsInfos[i]);
-                    onlyTypes += regInfo.getType();
-                    onlyTypes += " ";
+                    onlyTypes += argsInfos[i].split(" ")[0];
+                    if(i + 1 < argsInfos.length)
+                        onlyTypes += ", ";
                 }
             }
         }
         else{
             args = exp;
-            onlyTypes = "(i8*)";
+            onlyTypes = "i8*";
         }
         
-        System.out.println("\t" + createRegister() + " = bitcast " + exp + " to i8***"); 
-        System.out.println("\t" + createRegister() + " = load i8**, i8*** %_" + (getRegisterCounter()-2));
-        System.out.println("\t" + createRegister() + " = getelementptr i8*, i8** %_" + (getRegisterCounter()-2) + ", i32 " + methodOffset);
-        System.out.println("\t" + createRegister() + " = load i8*, i8** %_" + (getRegisterCounter()-2));
-        System.out.println("\t" + createRegister() + " = bitcast i8* %_" + (getRegisterCounter()-2) + " to " + methodType + " " + onlyTypes + "*");
-        System.out.println("\t" + createRegister() + " = call " + methodType + " %_" +(getRegisterCounter()-2) + args);
+        printIntoLlFile("\t" + createRegister() + " = bitcast i8* %_" + (getRegisterCounter()-4) + " to " + methodType + " (" + onlyTypes + ")*");
+        printIntoLlFile("\t" + createRegister() + " = call " + methodType + " %_" + (getRegisterCounter()-2) + "(" + args + ")");
         return methodType + " %_" + (getRegisterCounter()-1);	   
     }
 
@@ -962,7 +964,6 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
     * f0 -> Expression()
     * f1 -> ExpressionTail()
     */
-    // It will return a string like: int,boolean,Tree
         public String visit(ExpressionList n) throws Exception {
             String expression = n.f0.accept(this);   
             String expression_tail = n.f1.accept(this);   
@@ -1015,7 +1016,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         if(n.f0.which == 3){
             // If an id has been declared => find its type and return a "name type register" string.
             info = find_createRegister(exp, convertType(getVarType(exp, className)), true);
-            System.out.println("\t" + createRegister() + " = load " + info.getType() + ", " + info.getType() + "* " + info.getRegister());
+            printIntoLlFile("\t" + createRegister() + " = load " + info.getType() + ", " + info.getType() + "* " + info.getRegister());
             return info.getType() + " %_" + (getRegisterCounter() - 1);
         }
         return exp;
@@ -1079,10 +1080,10 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         //Get the size of the array
         String size = n.f3.accept(this).split(" ")[1];
 
-        System.out.println("\t" + createRegister() + " = add i1 " + size + ", 1");
-        System.out.println("\t" + createRegister() + " = call i8* @calloc(i1 4, i1 %_" + (getRegisterCounter()-2) + ")" );
-        System.out.println("\t" + createRegister() + " = bitcast i8* %_" + (getRegisterCounter()-2) + " to i1*");
-        System.out.println("store i1 " + size + ", i1* %_" + (getRegisterCounter()-1));
+        printIntoLlFile("\t" + createRegister() + " = add i1 " + size + ", 1");
+        printIntoLlFile("\t" + createRegister() + " = call i8* @calloc(i1 4, i1 %_" + (getRegisterCounter()-2) + ")" );
+        printIntoLlFile("\t" + createRegister() + " = bitcast i8* %_" + (getRegisterCounter()-2) + " to i1*");
+        printIntoLlFile("\tstore i1 " + size + ", i1* %_" + (getRegisterCounter()-1));
 
         return  "i1* %_" + (getRegisterCounter()-1);
             
@@ -1101,10 +1102,10 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         //Get the size of the array
         String size = n.f3.accept(this).split(" ")[1];
 
-        System.out.println("\t" + createRegister() + " = add i32 " + size + ", 1");
-        System.out.println("\t" + createRegister() + " = call i8* @calloc(i32 4, i32 %_" + (getRegisterCounter()-2) + ")" );
-        System.out.println("\t" + createRegister() + " = bitcast i8* %_" + (getRegisterCounter()-2) + " to i32*");
-        System.out.println("\tstore i32 " + size + ", i32* %_" + (getRegisterCounter()-1));
+        printIntoLlFile("\t" + createRegister() + " = add i32 " + size + ", 1");
+        printIntoLlFile("\t" + createRegister() + " = call i8* @calloc(i32 4, i32 %_" + (getRegisterCounter()-2) + ")" );
+        printIntoLlFile("\t" + createRegister() + " = bitcast i8* %_" + (getRegisterCounter()-2) + " to i32*");
+        printIntoLlFile("\tstore i32 " + size + ", i32* %_" + (getRegisterCounter()-1));
         
         return  "i32* %_" + (getRegisterCounter()-1);
     }
@@ -1120,7 +1121,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
     public String visit(AllocationExpression n) throws Exception {
         // Get className
         String id = n.f1.accept(this);
-        int size = 0;
+        int size = 8;
         int numOfmethods = symbol_table.get(id).getMethods().size();
 
         Map<String, VarInfo> vars = symbol_table.get(className).getVars();
@@ -1136,10 +1137,10 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
             }
         }
 
-        System.out.println("\t" + createRegister() + " = call i8* @calloc(i32 1, i32 " + size + ")");
-        System.out.println("\t" + createRegister() + " = bitcast i8* %_" + (getRegisterCounter()-2) + " to i8***");
-        System.out.println("\t" + createRegister() + " = getelementptr [" + numOfmethods + "], [" + numOfmethods + "]* @." + className + "_vtable, i32 0, i32 0");
-        System.out.println("\tstore i8** %_" + (getRegisterCounter()-1) + ", i8*** %_" + (getRegisterCounter()-2));
+        printIntoLlFile("\t" + createRegister() + " = call i8* @calloc(i32 1, i32 " + String.valueOf(size) + ")");
+        printIntoLlFile("\t" + createRegister() + " = bitcast i8* %_" + (getRegisterCounter()-2) + " to i8***");
+        printIntoLlFile("\t" + createRegister() + " = getelementptr [" + numOfmethods + "x i8*], [" + numOfmethods + "x i8*]* @." + className + "_vtable, i32 0, i32 0");
+        printIntoLlFile("\tstore i8** %_" + (getRegisterCounter()-1) + ", i8*** %_" + (getRegisterCounter()-2));
 
         return "i8* %_" + (getRegisterCounter()-3);
     }
@@ -1151,7 +1152,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
     !f1
     */
     public String visit(NotExpression n) throws Exception {
-        System.out.println(createRegister() + " = xor " + n.f1.accept(this) + 1);
+        printIntoLlFile("\t" + createRegister() + " = xor " + n.f1.accept(this) + " 1,");
         return "i1 %_" + (getRegisterCounter()-1);
     }
 

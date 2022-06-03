@@ -1,7 +1,5 @@
 import syntaxtree.*;
 import java.io.*;
-import java.util.Map;
-import java.util.Iterator;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -16,6 +14,7 @@ public class Main {
             System.exit(1);
         }
         FileInputStream fis = null;
+        BufferedWriter out = null;
         for(int i = 0; i < args.length; i++){
             try{
                 fis = new FileInputStream(args[i]);
@@ -31,9 +30,9 @@ public class Main {
                 root.accept(collector, null);
                 System.out.println(ANSI_GREEN + "First iteration completed successfully." + ANSI_RESET);
 
-                // Second iteration of the parse tree in order to do type checking
-                // with the help of the symbol table we built at the first iteration.
-                LlvmGenerator generator = new LlvmGenerator(collector.getSymbolTable(), collector.getQueue());
+                // Second iteration of the parse tree in order produce llvm code
+                out = new BufferedWriter( new FileWriter(args[i].replace(".java", ".ll")));
+                LlvmGenerator generator = new LlvmGenerator(out, collector.getSymbolTable(), collector.getQueue());
                 root.accept(generator);
                 System.err.println(GREEN_BRIGHT + "Llvm code generated successfully." + ANSI_RESET);
             }
@@ -46,6 +45,7 @@ public class Main {
             finally{
                 try{
                     if(fis != null) fis.close();
+                    if(out != null) out.close();
                 }
                 catch(IOException ex){
                     System.err.println(ex.getMessage());

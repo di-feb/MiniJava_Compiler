@@ -12,9 +12,7 @@ compile:
 	$(JC) $(MAIN) 
 
 llvm:
-#	$(J) $(CLASSES)  $(wildcard $(INPUT)/*/*.java)
-#   $(J) $(CLASSES)  $(wildcard $(INPUT)/*.java)
-	$(J) $(CLASSES) ../tests/Factorial.java
+	$(J) $(CLASSES) $(wildcard $(INPUT)/*.java)
 
 clean:
 	rm -rf ../build/* *Parse* syntaxtree visitor *Token* minijava-jtb.jj JavaCharStream.java *.class out*
