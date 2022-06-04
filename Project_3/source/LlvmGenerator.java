@@ -87,16 +87,16 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         String new_register = createRegister();
 
         // set a new pointer to that field
-        printIntoLlFile(new_register + " = getelementptr i8, i8* %this, i32 " + offset + "\t");
+        printIntoLlFile("\t" + new_register + " = getelementptr i8, i8* %this, i32 " + offset);
 
         // if the size of the field is different from i8, cast it to the right one
         if(!"i8".equals(type))
-            printIntoLlFile("\t" + createRegister() + " = bitcast i8* " + new_register + " to " + type + "*\t");
+            printIntoLlFile("\t" + createRegister() + " = bitcast i8* " + new_register + " to " + type + "*");
 
         // if we are into a right value expression aka want the content of the field:
         String new_type;
         if(rvalue){
-            printIntoLlFile(createRegister() + " = load " + type + ", " + type + "* %"  + (getRegisterCounter()-2));
+            printIntoLlFile("\t" + createRegister() + " = load " + type + ", " + type + "* %"  + (getRegisterCounter()-2));
             new_type = type + "*";
             type = new_type;
         }
@@ -132,20 +132,25 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
 
     // Prints the code for checking if the index is oob
     void checkOOB(String index, String length, boolean booleanArray){
+        // Make the labels
+        String oob_0 = createLabel("oob");
+        String oob_1 = createLabel("oob");
         if(!booleanArray){
             printIntoLlFile("\t" + createRegister() + " = icmp slt i32 " + index + ", 0");
             printIntoLlFile("\t" + createRegister() + " = icmp slt i32 " + index + ", " + length +"\t");
             printIntoLlFile("\t" + createRegister() + " = xor i1 %_" + (getRegisterCounter()-3) + ", %_" + (getRegisterCounter()-2) +"\t" );
-            printIntoLlFile("\tbr i1 %_" + (getRegisterCounter()-1) + ", label %" + createLabel("oob") + ", label %" + createLabel("oob") + "\n" + createLabel("oob") + ":"); 
-            printIntoLlFile("\tcall void @throw_oob()\n\tbr label %" + createLabel("oob") + "\n\n" + createLabel("oob") + ":");
         }
         else{
             printIntoLlFile("\t" + createRegister() + " = icmp slt i1 " + index + ", 0");
             printIntoLlFile("\t" + createRegister() + " = icmp slt i1 " + index + ", " + length +"\t");
             printIntoLlFile("\t" + createRegister() + " = xor i1 %_" + (getRegisterCounter()-3) + ", %_" + (getRegisterCounter()-2) +"\t" );
-            printIntoLlFile("\tbr i1 %_" + (getRegisterCounter()-1) + ", label %" + createLabel("oob") + ", label %" + createLabel("oob") + "\n" + createLabel("oob") + ":"); 
-            printIntoLlFile("\tcall void @throw_oob()\n\tbr label %" + createLabel("oob") + "\n\n" + createLabel("oob") + ":");
+            
         }
+        printIntoLlFile("\tbr i1 %_" + (getRegisterCounter()-1) + ", label %" + oob_1 + ", label %" + oob_0);  
+        printIntoLlFile(oob_0);
+        printIntoLlFile("\tcall void @throw_oob()");
+        printIntoLlFile("\tbr label %" + oob_1);
+        printIntoLlFile(oob_1);
 
     }
 
@@ -153,14 +158,14 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
     // returns a string "type, register"
     String loadArraysElement(String register, String index, boolean booleanArray){
         if(booleanArray){
-            printIntoLlFile("\t "+ createRegister() + " = bitcast i8* %_" + (getRegisterCounter() - 1) + " to i1*");
-            printIntoLlFile("\t "+ createRegister() + " = getelementptr i1, i1* %_" + (getRegisterCounter()-2) + ", i1 " + index);
+            printIntoLlFile("\t "+ createRegister() + " = getelementptr i8, i8* %this, i32 " + index);
+            printIntoLlFile("\t "+ createRegister() + " = bitcast i8* %_" + (getRegisterCounter() - 2) + " to i1*");
             printIntoLlFile("\t "+ createRegister() + " = load i1, i1* %_" + (getRegisterCounter()-2 + "\t"));
             return "i1 %_" + (getRegisterCounter()-1);
         }
         else{
-            printIntoLlFile("\t "+ createRegister() + " = bitcast i8* %_" + (getRegisterCounter() - 1) + " to i32*");
-            printIntoLlFile("\t "+ createRegister() + " = getelementptr i32, i32* %_" + (getRegisterCounter()-2) + ", i32 " + index);
+            printIntoLlFile("\t "+ createRegister() + " = getelementptr i8, i8* %this, i32 " + index);
+            printIntoLlFile("\t "+ createRegister() + " = bitcast i8* %_" + (getRegisterCounter() - 2) + " to i32*");
             printIntoLlFile("\t "+ createRegister() + " = load i32, i32* %_" + (getRegisterCounter()-2 + "\t"));
             return "i32 %_" + (getRegisterCounter()-1);
         }
@@ -175,13 +180,14 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         // Check if the array is a rvalue expression.
         // If it is => it is loaded
         // else => its is not loaded and we need to load it
-        if(!rvalue){
-            // always load from a generic type i8* beacuse we dont know the actual type yet
-            printIntoLlFile(createRegister() + " = load i8*, i8** " + reg + "\t");
-            length = loadArraysElement(reg, index, booleanArray);
+        if(rvalue)
+            length = loadArraysElement(reg, "0", booleanArray).split(" ")[1];
+            
+        else{
+            printIntoLlFile("\t" + createRegister() + " = load i8*, i8** " + reg);
+            length = loadArraysElement("i8* %_" + (getRegisterCounter()-1), "0", booleanArray).split(" ")[1];
         }
-        else
-            length = loadArraysElement(reg, index, booleanArray);
+            
         
         // Print the code for checking if the index is oob
         checkOOB(index, length, booleanArray);
@@ -207,7 +213,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
     String getCorrectIndex(String index){
         // Check if we get an integer or a register
         if( index.startsWith("%")){ // if we get a register, create a new one, add one to it
-            printIntoLlFile(createRegister() + " = add i32 " + index + ", 1");
+            printIntoLlFile("\t" + createRegister() + " = add i32 " + index + ", 1");
             return "%_" + (getRegisterCounter() - 1);
         }
         // cast the string index to int, add one to it, and cast it again to string
@@ -428,6 +434,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         }
     */
     public String visit(MethodDeclaration n) throws Exception {
+        
         // Get methods return type at llvm form.
         String method_RetType = convertType(n.f1.accept(this));  
         
@@ -462,8 +469,10 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         // Get type of returned value at llvm form.
         String value_RetType = n.f10.accept(this);
         printIntoLlFile("\tret " + value_RetType + "\n}\n");
-        
+
+        registerCounter = 0;
         methodName = null;
+        
         return null;
     }
 
@@ -602,7 +611,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         String lid = n.f0.accept(this);
 
         // Find its type and register
-        String type = getVarType(lid, className);
+        String type = convertType(getVarType(lid, className));
         RegInfo info = find_createRegister(lid, type, false); // if id is a field,we dont have info for that
         String lreg = info.getRegister();
         String lType = info.getType();
@@ -645,12 +654,14 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         
         // Get the index of the array ( returns an register with the index of the array)
         // or the index itself
-        String index = getCorrectIndex(n.f2.accept(this).split(" ")[1]); 
-
+        String index = n.f2.accept(this).split(" ")[1]; 
+        // Get the expr
+        String expr = n.f5.accept(this); 
+        
         // Check if the index is in bounds and act accordingly.
         checkIndex(lreg, index, false, lType.equals("i1"));
-
-        String expr = n.f5.accept(this); 
+        index = getCorrectIndex(index);
+        
         // Store the value of the expr f5 inside the array.
         storeIntoArray(lreg, lType, lType.equals("i1"), expr, index );
         
@@ -715,6 +726,7 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         // Make the labels 
         String while_0 = createLabel("loop");
         String while_1 = createLabel("loop");
+        String while_2 = createLabel("loop");
 
         // Go to while loop to check the condition
         printIntoLlFile("\tbr label " + while_0);
@@ -724,13 +736,14 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         String cond = n.f2.accept(this);
 
         // Go to the loop to execute the statement
-        printIntoLlFile("\tbr " + cond + ", label " + while_0 + ", label " + while_1);
+        printIntoLlFile("\tbr " + cond + ", label " + while_1 + ", label " + while_2);
         printIntoLlFile(while_1 + ":");
 
         // Get the statement
         n.f4.accept(this);
-
-        return null;
+        printIntoLlFile("\tbr label " + while_0);
+        printIntoLlFile(while_2 + ":");
+        return cond;
     }
 
 
@@ -880,11 +893,11 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         String expReg = exp.split(" ")[1];
 
         // Get the index
-        String index = getCorrectIndex(n.f2.accept(this).split(" ")[1]); 
+        String index = n.f2.accept(this).split(" ")[1];
 
-        // Return the register that holds the address of the index element
         checkIndex(expReg, index, true, expType.equals("i1"));
-        return loadArraysElement(expReg, index, expType.equals("i1"));
+        String element = loadArraysElement(expReg, getCorrectIndex(index), expType.equals("i1"));
+        return element;
 
                 
     }
@@ -900,8 +913,8 @@ public class LlvmGenerator extends GJNoArguDepthFirst< String >{
         String exp = n.f0.accept(this);
         String expType = exp.split(" ")[0];
         String expReg = exp.split(" ")[1];
-        
-        return loadArraysElement(expReg, "0", expType.equals("i1"));
+        String length = loadArraysElement(expReg, "0", expType.equals("i1"));
+        return length;
         
     }
 

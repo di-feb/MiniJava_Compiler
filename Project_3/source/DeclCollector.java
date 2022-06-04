@@ -10,7 +10,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
     // A queue that holds the classNames, or object names for every message sent.
     // So we can use them later at llvmgenerator MessageSent funtion
     private LinkedList<String> messageSendQueue;
-    private Map <String, String>vars;   
+    private Map <String, String> variables;   
     private String currMethod;                  // Keeps the current method we are into
     private String className;                   // Keeps the current class we are into
     private int fieldOffset;                    // Keeps the current offset of the fields of the class className
@@ -23,7 +23,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         methodOffset = 0;
         symbol_table = new LinkedHashMap <String, Data>();
         messageSendQueue = new LinkedList<String>();
-        vars = new LinkedHashMap <String, String>();
+        variables = new LinkedHashMap <String, String>();
     }
 
     public void resetOffsets(){
@@ -224,7 +224,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
 
             data.getVars().put(var_name, vars_value);
         }
-        vars.put(var_name, var_type);
+        variables.put(var_name, var_type);
 
         return null;
     }  
@@ -296,7 +296,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         String name = n.f1.accept(this, null);
         
         data.getMethods().get(currMethod).getArgs().put(name, type);
-        vars.put(name, type);
+        variables.put(name, type);
         return null;
     }
 
@@ -375,20 +375,6 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         return n.f0.toString();
     }
 
-    // @CaseOfMessageSendOnly
-    // /*  AssignmentStatement:   f0 -> Identifier() = f2 -> Expression(); */
-    // public String visit(AssignmentStatement n, Data data) throws Exception { 
-    //     String left = n.f0.accept(this, null);
-    //     String right = n.f2.accept(this, null);
-
-    //     /* in case of an assignment, a parent class reference might now point to a child class object, 
-    //        so adjust the variables table to reflect that, in order for the right method to be executed in case of a message send*/ 
-    //     if(right != null)
-    //         this.vars.put(left, right);
-
-    //     return null;
-    // }
-
      /** MessageSend
     * f0 -> PrimaryExpression()
     * f1 -> "."
@@ -420,7 +406,7 @@ public class DeclCollector extends GJDepthFirst<String, Data>{
         String exp = n.f0.accept(this, null);
         
         if(num == 3)
-            return vars.get(exp);
+            return variables.get(exp);
             
         // in case of an identifier, return the data type
         return exp;
