@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sat Jun  4 12:51:51 2022
+# Make data base, printed on Sun Jun  5 14:07:53 2022
 
 # Variables
 
@@ -15,7 +15,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # automatic
 ?F = $(notdir $?)
 # environment
-WSLENV = ELECTRON_RUN_AS_NODE/w:WT_SESSION::WT_PROFILE_ID
+WSLENV = VSCODE_WSL_EXT_LOCATION/up
 # default
 .SHELLFLAGS := -c
 # environment
@@ -33,7 +33,7 @@ SHELL = /bin/sh
 # environment
 VSCODE_NLS_CONFIG = {"locale":"en","availableLanguages":{}}
 # environment
-_ = /mnt/c/Users/Stath/AppData/Local/Programs/Microsoft VS Code/bin/code
+_ = /home/feb/.vscode-server/bin/c3511e6c69bb39013c4a4b7b9566ec1ca73fc4d5/node
 # makefile (from 'Makefile', line 1)
 MAKEFILE_LIST :=  Makefile
 # makefile (from 'Makefile', line 3)
@@ -47,7 +47,7 @@ VSCODE_CWD = /mnt/c/Users/Stath/AppData/Local/Programs/Microsoft VS Code
 # default
 MAKE_HOST := x86_64-pc-linux-gnu
 # environment
-PATH = /home/feb/.vscode-server/bin/c3511e6c69bb39013c4a4b7b9566ec1ca73fc4d5/bin/remote-cli:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/mnt/c/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/:/mnt/c/Program Files/Intel/Intel(R) Management Engine Components/iCLS/:/mnt/c/windows/system32:/mnt/c/windows:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL:/mnt/c/Program Files/Intel/Intel(R) Management Engine Components/DAL:/mnt/c/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT:/mnt/c/Program Files/Intel/Intel(R) Management Engine Components/IPT:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/Git/cmd:/mnt/c/MinGW/bin:/mnt/c/Program Files/OpenVPN/bin:/mnt/c/Program Files/MATLAB/R2018b/runtime/win64:/mnt/c/Program Files/MATLAB/R2018b/bin:/mnt/c/Users/Stath/AppData/Local/Programs/Python/Python36-32/Scripts/:/mnt/c/Users/Stath/AppData/Local/Programs/Python/Python36-32/:/mnt/c/windows/s:/mnt/c/Users/Stath/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/Stath/AppData/Local/Programs/Python/Python39
+PATH = /home/feb/.vscode-server/bin/c3511e6c69bb39013c4a4b7b9566ec1ca73fc4d5/bin/remote-cli:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/mnt/c/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/:/mnt/c/Program Files/Intel/Intel(R) Management Engine Components/iCLS/:/mnt/c/windows/system32:/mnt/c/windows:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL:/mnt/c/Program Files/Intel/Intel(R) Management Engine Components/DAL:/mnt/c/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT:/mnt/c/Program Files/Intel/Intel(R) Management Engine Components/IPT:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/Git/cmd:/mnt/c/MinGW/bin:/mnt/c/Program Files/OpenVPN/bin:/mnt/c/Program Files/MATLAB/R2018b/runtime/win64:/mnt/c/Program Files/MATLAB/R2018b/bin:/mnt/c/Users/Stath/AppData/Local/Programs/Python/Python36-32/Scripts/:/mnt/c/Users/Stath/AppData/Local/Programs/Python/Python36-32/:/mnt/c/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/:/mnt/c/Program Files/Intel/Intel(R) Management Engine Components/iCLS/:/mnt/c/windows/system32:/mnt/c/windows:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL:/mnt/c/Program Files/Intel/Intel(R) Management Engine Components/DAL:/mnt/c/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT:/mnt/c/Program Files/Intel/Intel(R) Management Engine Components/IPT:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/Git/cmd:/mnt/c/MinGW/bin:/mnt/c/Program Files/OpenVPN/bin:/mnt/c/Program Files/MATLAB/R2018b/runtime/win64:/mnt/c/Program Files/MATLAB/R2018b/bin:/mnt/c/Program Files (x86)/Intel/Intel(R) Management Engine Components/iCLS/:/mnt/c/Program Files/Intel/Intel(R) Management Engine Components/iCLS/:/mnt/c/windows/s:/mnt/c/Users/Stath/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/Stath/AppData/Local/Programs/Python/Python39
 # environment
 LSCOLORS = Gxfxcxdxbxegedabagacad
 # makefile (from 'Makefile', line 2)
@@ -55,7 +55,7 @@ JC = javac
 # environment
 VSCODE_LOG_STACK = false
 # environment
-VSCODE_IPC_HOOK_CLI = /tmp/vscode-ipc-89cd3450-be2a-498c-9852-f90ce510a914.sock
+VSCODE_IPC_HOOK_CLI = /tmp/vscode-ipc-2515a87c-2919-4de0-9763-663d77416695.sock
 # default
 .FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver output-sync check-symlink load
 # environment
@@ -71,15 +71,13 @@ PWD = /home/feb/Compilers/Project_3/source
 # default
 .LOADED := 
 # environment
-WT_SESSION = 1a1ed004-8039-431d-ab86-413253456f61
-# environment
 VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
 HOME = /home/feb
 # environment
 LOGNAME = feb
 # environment
-APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
 # makefile (from 'Makefile', line 6)
 CLASSES = Main
 # environment
@@ -97,7 +95,7 @@ MAKE = $(MAKE_COMMAND)
 # default
 MAKECMDGOALS := all
 # environment
-SHLVL = 1
+SHLVL = 0
 # default
 MAKE_VERSION := 4.2.1
 # environment
@@ -105,7 +103,7 @@ USER = feb
 # makefile
 .DEFAULT_GOAL := compile
 # environment
-NAME = Code
+NAME = DESKTOP-O5JI7RR
 # environment
 LESS = -R
 # automatic
@@ -134,8 +132,6 @@ MAIN = Main.java
 +F = $(notdir $+)
 # environment
 VSCODE_HANDLES_SIGPIPE = true
-# environment
-WT_PROFILE_ID = {07b52e3e-de2c-5db4-bd2d-ba144ed6c273}
 # default
 MAKEFILES := 
 # automatic
@@ -165,7 +161,7 @@ WSL_DISTRO_NAME = Ubuntu-20.04
 # makefile (from 'Makefile', line 7)
 INPUT = ../tests
 # variable set hash-table stats:
-# Load=77/1024=8%, Rehash=0, Collisions=6/102=6%
+# Load=75/1024=7%, Rehash=0, Collisions=6/100=6%
 
 # Pattern-specific Variable Values
 
@@ -173,9 +169,9 @@ INPUT = ../tests
 
 # Directories
 
-# . (device 2, inode 13229323905491383): 40 files, no impossibilities.
+# . (device 2, inode 13229323905491383): 12 files, no impossibilities.
 
-# 40 files, no impossibilities in 1 directories.
+# 12 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -193,7 +189,7 @@ all:
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2022-06-03 00:30:23.7454967
+#  Last modified 2022-06-04 14:13:30.5724295
 #  File has been updated.
 #  Successfully updated.
 
@@ -234,13 +230,13 @@ llvm:
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 48 / storage = 771 B / avg = 16 B
-# current buf: size = 8162 B / used = 771 B / count = 48 / avg = 16 B
+# strcache buffers: 1 (0) / strings = 20 / storage = 208 B / avg = 10 B
+# current buf: size = 8162 B / used = 208 B / count = 20 / avg = 10 B
 
-# strcache performance: lookups = 55 / hit rate = 12%
+# strcache performance: lookups = 27 / hit rate = 25%
 # hash-table stats:
-# Load=48/8192=1%, Rehash=0, Collisions=1/55=2%
-# Finished Make data base on Sat Jun  4 12:51:51 2022
+# Load=20/8192=0%, Rehash=0, Collisions=1/27=4%
+# Finished Make data base on Sun Jun  5 14:07:53 2022
 
  
 make: *** No rule to make target 'all'.  Stop.
