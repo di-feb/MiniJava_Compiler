@@ -7,7 +7,7 @@ into the intermediate representation used by the LLVM compiler project.
 We will use two visitors, so we are going to iterate the parse tree two times.  
 - The first visitor (aka DeclCollector) is responsible for the construction of the symbol table  
 that will contain information for each class of the input file that we are going to analyze.     
-- The second visitor (aka LlvmGenerator) with the help of the symbol table we construct at the first    
+- The second visitor (aka LlvmGenerator) with the help of the symbol table we constructed at the first    
 iteration is responsible for producing the LLVM code. 
 
 ## To Run it
