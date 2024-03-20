@@ -1,8 +1,9 @@
-## <b>Compilers Project 1: LL(1) Calculator Parser  
+# Compilers Project 1: LL(1) Calculator Parser  
 
-### <b>Documentation
-Implements a simple calculator.   
-The calculator should accept expressions with   
+## Documentation
+
+Implements a simple calculator.  
+The calculator should accept expressions with  
 the bitwise AND(&) and XOR(^) operators, as well as parentheses.  
 The grammar (for single-digit numbers) is summarized in:  
 
@@ -16,7 +17,8 @@ The grammar (for single-digit numbers) is summarized in:
     num -> 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
 First off, we need to remodel our grammar in order to meet the following requirements.
-1)  Support priority between the two operators ^, &.  
+
+1) Support priority between the two operators ^, &.  
     To achieve this we must take care of grammar  
      to place the operator & which has a higher precedence  
      at a lower level in the parse tree, so that it is clear what for  
@@ -38,12 +40,12 @@ First off, we need to remodel our grammar in order to meet the following require
     Left recursive grammars are possible to trap a LL(1) parser into infinity loops.  
     That happens because at a specific time we do not have enough   
     information on which rule to apply to proceed into the unfolding of the expression.  
-    
+
         Formally a grammar is left recursive if exist at least one non-terminal  
         A such as that: A->* A a. (for some set of symbols a).  
         * Means A-> Bx 
                 B-> Ay 
-    
+
     Now to eliminate the left recursion we need to remodel our grammar one more time.  
     We will rewrite our grammar so that each non-terminal having a left-recursive rule   
     will be replaced with two others.In the first non-terminal will call the second and  
@@ -115,7 +117,7 @@ Now that our grammar is in a form that it can accept
 LL (1) parsing we can build a lookup table  
 that will help us convert the above grammar into code.  
 
-### **Lookahead Table**  
+## Lookahead Table  
 
 |Non-Terminals | '0' .. '9'      | '^'           | '&'               | '('            | ')'     | '$'     |
 |------------- |:---------------:|:-------------:|:-----------------:|:-------:       |:--------|:-------:|
@@ -125,6 +127,6 @@ that will help us convert the above grammar into code.
 | **rest2**    | error           | ε             | & factor rest2    | error          | ε       | ε       |
 | **factor**   | num             | error         | error             | (exp)          | error   | error   |  
 
-### **How to compile and run:** 
-- We just write *make run* into the current directory.
+## Compile and run
 
+- Write *make run* into the current directory.

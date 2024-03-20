@@ -1,44 +1,48 @@
-## <b> *Translator to Java.*
-We will implement a parser and translator for a language supporting string operations.  
-The language supports:
-- concatenation (+) 
-- "reverse" operators over strings,
-- function definitions and calls,
-- conditionals (if-else i.e, every "if" must be followed by an "else"),  
-- The following logical expression:  
-   is-prefix-of (string1 prefix string2): Whether string1 is a prefix of string2.  
+# String Operations Parser and Translator to Java
 
-All values in the language are strings.  
-The precedence of the operator expressions is defined as: precedence(if) < precedence(concat) < precedence(reverse). 
+This project implements a parser and translator for a language that supports string operations. The language includes:
 
-### <b>To do that we will use *Jflex* and *JavaCUP* files.  
-- The job of Jflex aka lexer.flex file is to produce tokens from the input file.   
-  These tokens will be used later by the parser to produce the translator to Java.  
-- The job of parser aka parser.cup is to take a linear sequence of characters  
-  and with the help of the toketns that lexer produced basically building structure from it (grammar),   
-  usually in the form of a parse tree or an abstract syntax tree,  
-  in order to facilitate translation into another language.  
+- String concatenation (+)
+- String reversal
+- Function definitions and calls
+- Conditionals (every "if" must be followed by an "else")
+- Logical expression: is-prefix-of (string1 prefix string2) - checks if string1 is a prefix of string2
 
-### Ambiguity  
+All values in the language are strings. The operator precedence is defined as: precedence(if) < precedence(concat) < precedence(reverse).
+
+## Implementation using JFlex and JavaCUP
+
+- **JFlex (lexer.flex)**: This component is responsible for tokenizing the input file. These tokens are used by the parser to generate the Java translator.
+- **JavaCUP (parser.cup)**: This component takes a sequence of characters and, with the help of the tokens produced by the lexer,  
+builds a structure from it (usually in the form of a parse tree or an abstract syntax tree).  
+This structure is used to facilitate translation into another language.
+
+## Ambiguity
+
 The JFLEX deals with ambiguity with the two ways below:
+
 - The first one is to use the rule that matches more characters in the source code.  
 This solution is called *maximal munch*.  
-- The second one is to use the help of *priority* specifying that a certain rule   
-should be applied if two or more regular expressions match the same number   
+- The second one is to use the help of *priority* specifying that a certain rule  
+should be applied if two or more regular expressions match the same number  
 of characters from a string.  
 
 But in the JavaCUP to deal with ambiguity we need to write the grammar to be unambiguous.  
 We will do that by:  
+
 - using the preference (as above in the lexer).
-- associativity: when two non-terminals produce the same rule up to a point   
+- associativity: when two non-terminals produce the same rule up to a point  
 and we have a conflict we produce a non-terminal for both of them.  
 
-### **How to compile and execute:** 
- *Compile*: Just write *make compile* into the current directory.  
- *Execute*: Just write *make execute* into the current directory.     
- Insine the directory *Ιnputs* there are the three examples from the website of class,    
- we can use them, as input for the parser, by changing the makefile.    
- The code that generated from the parser it will be redirected to a Main.java file    
- that will be produced the moment we run the above command.  
- We will compile and run the Main.java file and we will get the output at the terminal.  
+## Compile and Execute
 
+To compile and execute the project, use the following commands in the project's root directory:
+
+- `Compile`: Enter `make compile`.
+- `Execute`: Enter `make execute`.
+
+The `Inputs` directory contains three example input files from the class website. You can use these files as input for the parser by modifying the Makefile.
+
+The parser generates code that is redirected to a `Main.java` file. This file is created when you run the above commands.
+
+After running these commands, the `Main.java` file is compiled and executed, and the output is displayed in the terminal.
