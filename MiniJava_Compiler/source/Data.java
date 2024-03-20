@@ -1,9 +1,4 @@
-import java.util.Map;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import visitor.GJDepthFirst;
-import syntaxtree.*;
-
 
 // Contains all the usefull information about a class.
 public class Data {

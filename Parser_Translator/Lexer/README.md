@@ -23,9 +23,9 @@ First off, we need to remodel our grammar in order to meet the following require
      to place the operator & which has a higher precedence  
      at a lower level in the parse tree, so that it is clear what for  
      to deal with the operator & we should be done with ^.  
-     These in case parentheses do not change our precedence.      
+     These in case parentheses do not change our precedence.  
 
-    The grammar that will emerge based on these is: 
+    The grammar that will emerge based on these is:  
 
         exp -> exp ^ term
             |  term
@@ -38,7 +38,7 @@ First off, we need to remodel our grammar in order to meet the following require
 
 2) Eliminate Left-Recursion.  
     Left recursive grammars are possible to trap a LL(1) parser into infinity loops.  
-    That happens because at a specific time we do not have enough   
+    That happens because at a specific time we do not have enough  
     information on which rule to apply to proceed into the unfolding of the expression.  
 
         Formally a grammar is left recursive if exist at least one non-terminal  
@@ -47,7 +47,7 @@ First off, we need to remodel our grammar in order to meet the following require
                 B-> Ay 
 
     Now to eliminate the left recursion we need to remodel our grammar one more time.  
-    We will rewrite our grammar so that each non-terminal having a left-recursive rule   
+    We will rewrite our grammar so that each non-terminal having a left-recursive rule  
     will be replaced with two others.In the first non-terminal will call the second and  
      calling the second non-terminal will give us clear information about the most common  
      we have to apply every time because all producers will have a unique first symbol.  
@@ -66,7 +66,7 @@ First off, we need to remodel our grammar in order to meet the following require
         8)         | (exp)
 
 Now we will show that this new grammar we made and based on it we will answer the queries  
-are LL (1). If it was not LL (1) we would have to make it LL (1) using left factoring.    
+are LL (1). If it was not LL (1) we would have to make it LL (1) using left factoring.  
 
 ● We calculate the First of every produce.
 
@@ -129,4 +129,17 @@ that will help us convert the above grammar into code.
 
 ## Compile and run
 
-- Write *make run* into the current directory.
+- Write `make run` into the src directory.
+
+### Example
+
+Let's say we give the following input:
+
+- 5 ^ 3 & 2  
+The program should parse this as `5 ^ (3 & 2)`, because the `&` operator has higher precedence than the `^` operator.  
+So, the output should be: `7`  
+This is because `3 & 2` equals `2`, and `5 ^ 2` equals `7`.  
+
+- 5 &^ 3  
+The program should return an error, because the input is not valid.
+So, the output should be: `Parse error!`

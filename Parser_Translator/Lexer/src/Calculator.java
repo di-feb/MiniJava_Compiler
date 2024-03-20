@@ -19,7 +19,6 @@ The grammar (for single-digit numbers) is summarized in:
 */
 
 import java.io.InputStream;
-import java.awt.SystemTray;
 import java.io.IOException;
 
 class Calculator {

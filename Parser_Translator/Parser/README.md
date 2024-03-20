@@ -38,11 +38,16 @@ and we have a conflict we produce a non-terminal for both of them.
 
 To compile and execute the project, use the following commands in the project's root directory:
 
-- `Compile`: Enter `make compile`.
-- `Execute`: Enter `make execute`.
+- `Compile`: Enter `make compile` into the src directory.
+- `Execute`: Enter `make execute` into the src directory.
 
 The `Inputs` directory contains three example input files from the class website. You can use these files as input for the parser by modifying the Makefile.
 
 The parser generates code that is redirected to a `Main.java` file. This file is created when you run the above commands.
 
 After running these commands, the `Main.java` file is compiled and executed, and the output is displayed in the terminal.
+
+The `Inputs` directory contains example input files. You can use these files as input for the parser by running the following command:
+
+```bash
+make execute < ../Inputs/your_input_file.txt
